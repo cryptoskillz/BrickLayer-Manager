@@ -122,7 +122,7 @@ app.get('/api/sites', authMiddleware, async (c) => {
     if (sites.length === 0) {
        const allList = await c.env.BRICKLAYER_SITES.list();
        for (const key of allList.keys) {
-         if (key.name !== 'SYSTEM:TRANSFER_TOKEN') {
+         if (!key.name.startsWith('SYSTEM:')) {
            const value = await c.env.BRICKLAYER_SITES.get(key.name);
            if (value) sites.push(JSON.parse(value));
          }
@@ -131,7 +131,7 @@ app.get('/api/sites', authMiddleware, async (c) => {
     
     return c.json({ sites });
   } catch (error) {
-    return c.json({ error: 'Failed to fetch sites' }, 500);
+    return c.json({ error: 'Failed to fetch sites: ' + error.message, stack: error.stack }, 500);
   }
 });
 
