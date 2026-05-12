@@ -1,6 +1,7 @@
 name = "bricklayer-manager"
 compatibility_date = "2024-05-12"
 main = "api/worker.js"
+account_id = "8851e575353a23f4511fbe2d1a74505e"
 
 [assets]
 directory = "./public"
@@ -11,8 +12,8 @@ ADMIN_PASSWORD = "password123"
 
 [[kv_namespaces]]
 binding = "BRICKLAYER_SITES"
-id = "preview_namespace_id"
-preview_id = "preview_namespace_id"
+id = "a1604e5a89954f2ba4b9628ab42e7823"
+preview_id = "a1604e5a89954f2ba4b9628ab42e7823"
 
 [env.preview]
 name = "bricklayer-manager-preview"
