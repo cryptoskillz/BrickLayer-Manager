@@ -1,0 +1,25 @@
+{
+  "name": "bricklayer-manager",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "bricklayer",
+    "build:prod": "bricklayer --prod",
+    "start": "wrangler dev",
+    "deploy:preview": "npm run build:prod && wrangler deploy --env preview",
+    "deploy:prod": "npm run build:prod && wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.3.0"
+  },
+  "devDependencies": {
+    "basebrick-bricklayer": "^1.0.0",
+    "@tailwindcss/cli": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "wrangler": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cryptoskillz/BrickLayer-Manager.git"
+  }
+}
