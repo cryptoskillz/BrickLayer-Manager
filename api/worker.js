@@ -136,8 +136,9 @@ app.get('/api/settings', authMiddleware, async (c) => {
   const adminEmail = await getSetting(c.env, 'SYSTEM:ADMIN_EMAIL', c.env.ADMIN_EMAIL);
   const githubClientId = await getSetting(c.env, 'SYSTEM:GITHUB_CLIENT_ID', '');
   const githubClientSecret = await getSetting(c.env, 'SYSTEM:GITHUB_CLIENT_SECRET', '');
+  const currency = await getSetting(c.env, 'currency', 'USD');
 
-  return c.json({ email: adminEmail, githubClientId, githubClientSecret });
+  return c.json({ email: adminEmail, githubClientId, githubClientSecret, currency });
 });
 
 app.post('/api/settings', authMiddleware, async (c) => {
@@ -145,7 +146,7 @@ app.post('/api/settings', authMiddleware, async (c) => {
     const user = c.get('user');
     if (user && user.role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
 
-    const { email, password, currentPassword, githubClientId, githubClientSecret } = await c.req.json();
+    const { email, password, currentPassword, githubClientId, githubClientSecret, currency } = await c.req.json();
     
     // Validate current password
     const adminPassword = await getSetting(c.env, 'SYSTEM:ADMIN_PASSWORD', c.env.ADMIN_PASSWORD);
@@ -157,6 +158,7 @@ app.post('/api/settings', authMiddleware, async (c) => {
     if (password) await setSetting(c.env, 'SYSTEM:ADMIN_PASSWORD', password);
     if (githubClientId !== undefined) await setSetting(c.env, 'SYSTEM:GITHUB_CLIENT_ID', githubClientId);
     if (githubClientSecret !== undefined) await setSetting(c.env, 'SYSTEM:GITHUB_CLIENT_SECRET', githubClientSecret);
+    if (currency) await setSetting(c.env, 'currency', currency);
     
     return c.json({ success: true });
   } catch (error) {
@@ -341,7 +343,7 @@ app.delete('/api/users/:email', authMiddleware, async (c) => {
 app.post('/api/sites', authMiddleware, async (c) => {
   try {
     const siteData = await c.req.json();
-    const siteId = siteData.url || siteData.name || `site-${Date.now()}`;
+    const siteId = siteData.id || siteData.githubUrl || siteData.name || siteData.url || `site-${Date.now()}`;
     
     const existing = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM sites WHERE id = ?').bind(siteId).first();
     
@@ -351,14 +353,17 @@ app.post('/api/sites', authMiddleware, async (c) => {
     const environment = siteData.environment || (existing ? existing.environment : '');
     const accountId = siteData.accountId || (existing ? existing.accountId : '');
     const githubUrl = siteData.githubUrl || (existing ? existing.githubUrl : '');
-    const productionUrl = existing ? existing.productionUrl : '';
-    const buildingCost = existing ? existing.buildingCost : 0;
-    const hostingCost = existing ? existing.hostingCost : 0;
-    const licenseCost = existing ? existing.licenseCost : 0;
+    const cmsUrl = siteData.cmsUrl || (existing ? existing.cmsUrl : '');
+    const previewCmsUrl = siteData.previewCmsUrl || (existing ? existing.previewCmsUrl : '');
+    const previewUrl = siteData.previewUrl || (existing ? existing.previewUrl : '');
+    const vanityUrl = existing ? existing.vanityUrl : '';
+    const vanityPreviewUrl = existing ? existing.vanityPreviewUrl : '';
+    const vanityCmsUrl = existing ? existing.vanityCmsUrl : '';
+    const vanityPreviewCmsUrl = existing ? existing.vanityPreviewCmsUrl : '';
 
     await c.env.BRICKLAYER_DB.prepare(`
-      INSERT INTO sites (id, name, url, description, environment, accountId, githubUrl, productionUrl, buildingCost, hostingCost, licenseCost, lastUpdated) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO sites (id, name, url, description, environment, accountId, githubUrl, cmsUrl, previewCmsUrl, previewUrl, vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, lastUpdated) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(id) DO UPDATE SET 
         name = excluded.name, 
         url = excluded.url, 
@@ -366,9 +371,12 @@ app.post('/api/sites', authMiddleware, async (c) => {
         environment = excluded.environment, 
         accountId = excluded.accountId, 
         githubUrl = excluded.githubUrl,
+        cmsUrl = excluded.cmsUrl,
+        previewCmsUrl = excluded.previewCmsUrl,
+        previewUrl = excluded.previewUrl,
         lastUpdated = CURRENT_TIMESTAMP
     `).bind(
-      siteId, name, url, description, environment, accountId, githubUrl, productionUrl, buildingCost, hostingCost, licenseCost
+      siteId, name, url, description, environment, accountId, githubUrl, cmsUrl, previewCmsUrl, previewUrl, vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl
     ).run();
     
     return c.json({ success: true, message: 'Site registered successfully', id: siteId });
@@ -388,25 +396,37 @@ app.put('/api/sites/:id', authMiddleware, async (c) => {
     const existing = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM sites WHERE id = ?').bind(id).first();
     if (!existing) return c.json({ error: 'Site not found' }, 404);
     
-    const productionUrl = updates.productionUrl !== undefined ? updates.productionUrl : existing.productionUrl;
-    const buildingCost = updates.buildingCost !== undefined ? parseFloat(updates.buildingCost) : existing.buildingCost;
-    const hostingCost = updates.hostingCost !== undefined ? parseFloat(updates.hostingCost) : existing.hostingCost;
-    const licenseCost = updates.licenseCost !== undefined ? parseFloat(updates.licenseCost) : existing.licenseCost;
+    const url = updates.url !== undefined ? updates.url : existing.url;
+    const previewUrl = updates.previewUrl !== undefined ? updates.previewUrl : existing.previewUrl;
+    const cmsUrl = updates.cmsUrl !== undefined ? updates.cmsUrl : existing.cmsUrl;
+    const previewCmsUrl = updates.previewCmsUrl !== undefined ? updates.previewCmsUrl : existing.previewCmsUrl;
+    const vanityUrl = updates.vanityUrl !== undefined ? updates.vanityUrl : existing.vanityUrl;
+    const vanityPreviewUrl = updates.vanityPreviewUrl !== undefined ? updates.vanityPreviewUrl : existing.vanityPreviewUrl;
+    const vanityCmsUrl = updates.vanityCmsUrl !== undefined ? updates.vanityCmsUrl : existing.vanityCmsUrl;
+    const vanityPreviewCmsUrl = updates.vanityPreviewCmsUrl !== undefined ? updates.vanityPreviewCmsUrl : existing.vanityPreviewCmsUrl;
     
     await c.env.BRICKLAYER_DB.prepare(`
       UPDATE sites SET 
-        productionUrl = ?, 
-        buildingCost = ?, 
-        hostingCost = ?, 
-        licenseCost = ?,
+        url = ?, 
+        previewUrl = ?,
+        cmsUrl = ?,
+        previewCmsUrl = ?,
+        vanityUrl = ?,
+        vanityPreviewUrl = ?,
+        vanityCmsUrl = ?,
+        vanityPreviewCmsUrl = ?,
         lastUpdated = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).bind(productionUrl, buildingCost, hostingCost, licenseCost, id).run();
+    `).bind(
+      url, previewUrl, cmsUrl, previewCmsUrl, 
+      vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, 
+      id
+    ).run();
     
     const updatedSite = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM sites WHERE id = ?').bind(id).first();
     return c.json({ success: true, site: updatedSite });
   } catch (error) {
-    return c.json({ error: 'Failed to update site' }, 500);
+    return c.json({ error: 'Failed to update site', details: error.message }, 500);
   }
 });
 
@@ -456,4 +476,137 @@ app.post('/api/token/rotate', authMiddleware, async (c) => {
   return c.json({ token: newToken });
 });
 
-export default app;
+// Costings Endpoints
+app.get('/api/sites/:id/costings', authMiddleware, async (c) => {
+  try {
+    const siteId = decodeURIComponent(c.req.param('id'));
+    const result = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM costings WHERE site_id = ? ORDER BY created_at DESC').bind(siteId).all();
+    return c.json({ costings: result.results });
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch costings' }, 500);
+  }
+});
+
+app.post('/api/sites/:id/costings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user && user.role === 'viewer') return c.json({ error: 'Forbidden' }, 403);
+    const siteId = decodeURIComponent(c.req.param('id'));
+    const { description, amount, is_paid, frequency, created_at } = await c.req.json();
+    
+    if (!description || amount === undefined || !frequency) {
+      return c.json({ error: 'Missing required fields' }, 400);
+    }
+
+    if (created_at) {
+        await c.env.BRICKLAYER_DB.prepare(
+          'INSERT INTO costings (site_id, description, amount, is_paid, frequency, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(siteId, description, amount, is_paid ? 1 : 0, frequency, created_at).run();
+    } else {
+        await c.env.BRICKLAYER_DB.prepare(
+          'INSERT INTO costings (site_id, description, amount, is_paid, frequency) VALUES (?, ?, ?, ?, ?)'
+        ).bind(siteId, description, amount, is_paid ? 1 : 0, frequency).run();
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ error: 'Failed to add costing' }, 500);
+  }
+});
+
+app.put('/api/costings/:id', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user && user.role === 'viewer') return c.json({ error: 'Forbidden' }, 403);
+    const id = c.req.param('id');
+    const { description, amount, is_paid, frequency, created_at } = await c.req.json();
+
+    if (created_at) {
+        await c.env.BRICKLAYER_DB.prepare(
+          'UPDATE costings SET description = ?, amount = ?, is_paid = ?, frequency = ?, created_at = ? WHERE id = ?'
+        ).bind(description, amount, is_paid ? 1 : 0, frequency, created_at, id).run();
+    } else {
+        await c.env.BRICKLAYER_DB.prepare(
+          'UPDATE costings SET description = ?, amount = ?, is_paid = ?, frequency = ? WHERE id = ?'
+        ).bind(description, amount, is_paid ? 1 : 0, frequency, id).run();
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ error: 'Failed to update costing' }, 500);
+  }
+});
+
+app.delete('/api/costings/:id', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    if (user && user.role === 'viewer') return c.json({ error: 'Forbidden' }, 403);
+    const id = c.req.param('id');
+    await c.env.BRICKLAYER_DB.prepare('DELETE FROM costings WHERE id = ?').bind(id).run();
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ error: 'Failed to delete costing' }, 500);
+  }
+});
+
+app.get('/api/finance-report', authMiddleware, async (c) => {
+  try {
+    const result = await c.env.BRICKLAYER_DB.prepare(`
+      SELECT c.id, c.description, c.amount, c.is_paid, c.frequency, c.created_at, s.name as site_name, s.id as site_id
+      FROM costings c
+      JOIN sites s ON c.site_id = s.id
+      ORDER BY s.name ASC, c.created_at DESC
+    `).all();
+    
+    const currency = await getSetting(c.env, 'currency', 'USD');
+    return c.json({ report: result.results, currency });
+  } catch (error) {
+    return c.json({ error: 'Failed to fetch finance report' }, 500);
+  }
+});
+
+export default {
+  fetch: app.fetch,
+  async scheduled(event, env, ctx) {
+    const db = env.BRICKLAYER_DB;
+    // Get all recurring items that act as active subscriptions
+    const { results: recurrings } = await db.prepare("SELECT * FROM costings WHERE frequency IN ('monthly', 'yearly')").all();
+    
+    const now = new Date();
+    
+    for (const cost of recurrings) {
+      if (!cost.created_at) continue;
+      const createdDate = new Date(cost.created_at);
+      
+      let shouldDuplicate = false;
+      let dateLabel = '';
+      
+      if (cost.frequency === 'monthly') {
+        const monthsDiff = (now.getFullYear() - createdDate.getFullYear()) * 12 + (now.getMonth() - createdDate.getMonth());
+        // If one month or more has passed since it was created/last billed
+        if (monthsDiff >= 1) {
+          shouldDuplicate = true;
+          dateLabel = createdDate.toLocaleString('default', { month: 'short', year: 'numeric' });
+        }
+      } else if (cost.frequency === 'yearly') {
+        const yearsDiff = now.getFullYear() - createdDate.getFullYear();
+        // If a full year or more has passed
+        if (yearsDiff >= 1) {
+          shouldDuplicate = true;
+          dateLabel = createdDate.getFullYear().toString();
+        }
+      }
+      
+      if (shouldDuplicate) {
+        // Archive the old row as a 'one time' invoice with a date suffix to prevent Run Rate inflation
+        const oldDesc = `${cost.description} (${dateLabel})`;
+        await db.prepare("UPDATE costings SET frequency = 'one time', description = ? WHERE id = ?").bind(oldDesc, cost.id).run();
+        
+        // Insert a new row to represent the current active period, resetting status to unpaid
+        await db.prepare(
+          'INSERT INTO costings (site_id, description, amount, is_paid, frequency) VALUES (?, ?, ?, ?, ?)'
+        ).bind(cost.site_id, cost.description, cost.amount, 0, cost.frequency).run();
+      }
+    }
+  }
+};

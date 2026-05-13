@@ -29,6 +29,7 @@
                 </div>
                 <div class="flex items-center space-x-6">
                     <a href="/" class="text-sm font-medium text-gray-900 transition-colors">Dashboard</a>
+                    <a href="/finance.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Finance</a>
                     <a href="/users.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Users</a>
                     <a href="/settings.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Settings</a>
                     <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
@@ -84,31 +85,111 @@
                         </div>
                         <p class="text-sm text-gray-500 mb-6" x-text="site.description || 'No description provided.'"></p>
                         
-                        <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-                            <div class="sm:col-span-2">
-                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Preview URL</dt>
-                                <dd class="mt-1 text-sm text-gray-900">
+                        <!-- URLs List -->
+                        <div class="mt-4 space-y-3">
+                            <!-- Production URL -->
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider flex justify-between items-center">
+                                    Production URL
+                                    <button @click="openInlineEdit(site, 'vanityUrl', 'Production URL')" class="text-xs text-blue-600 hover:text-blue-500" x-text="site.vanityUrl ? 'Edit Vanity URL' : 'Add Vanity URL'"></button>
+                                </dt>
+                                <dd class="mt-1 flex flex-col space-y-1">
+                                    <template x-if="site.vanityUrl">
+                                        <a :href="site.vanityUrl" target="_blank" class="text-sm text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center break-all font-medium">
+                                            <span x-text="site.vanityUrl"></span>
+                                        </a>
+                                    </template>
                                     <template x-if="site.url">
-                                        <a :href="site.url" target="_blank" class="text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center break-all">
+                                        <a :href="site.url" target="_blank" class="text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center break-all" :class="site.vanityUrl ? 'text-xs text-gray-500 hover:text-gray-700' : 'text-sm'">
                                             <span x-text="site.url"></span>
                                         </a>
+                                    </template>
+                                    <template x-if="!site.vanityUrl && !site.url">
+                                        <span class="text-sm text-gray-400 italic">Not set</span>
                                     </template>
                                 </dd>
                             </div>
 
-                            <template x-if="site.productionUrl">
-                                <div class="sm:col-span-2">
-                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Production URL</dt>
-                                    <dd class="mt-1 text-sm text-gray-900">
-                                        <a :href="site.productionUrl" target="_blank" class="text-green-600 hover:text-green-500 hover:underline inline-flex items-center break-all">
-                                            <span x-text="site.productionUrl"></span>
+                            <!-- Preview URL -->
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider flex justify-between items-center mt-3">
+                                    Preview URL
+                                    <button @click="openInlineEdit(site, 'vanityPreviewUrl', 'Preview URL')" class="text-xs text-blue-600 hover:text-blue-500" x-text="site.vanityPreviewUrl ? 'Edit Vanity URL' : 'Add Vanity URL'"></button>
+                                </dt>
+                                <dd class="mt-1 flex flex-col space-y-1">
+                                    <template x-if="site.vanityPreviewUrl">
+                                        <a :href="site.vanityPreviewUrl" target="_blank" class="text-sm text-indigo-600 hover:text-indigo-500 hover:underline inline-flex items-center break-all font-medium">
+                                            <span x-text="site.vanityPreviewUrl"></span>
                                         </a>
-                                    </dd>
-                                </div>
-                            </template>
+                                    </template>
+                                    <template x-if="site.previewUrl">
+                                        <a :href="site.previewUrl" target="_blank" class="text-indigo-600 hover:text-indigo-500 hover:underline inline-flex items-center break-all" :class="site.vanityPreviewUrl ? 'text-xs text-gray-500 hover:text-gray-700' : 'text-sm'">
+                                            <span x-text="site.previewUrl"></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="!site.vanityPreviewUrl && !site.previewUrl">
+                                        <span class="text-sm text-gray-400 italic">Not set</span>
+                                    </template>
+                                </dd>
+                            </div>
 
+                            <!-- CMS URL -->
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider flex justify-between items-center mt-3">
+                                    CMS URL
+                                    <button @click="openInlineEdit(site, 'vanityCmsUrl', 'CMS URL')" class="text-xs text-blue-600 hover:text-blue-500" x-text="site.vanityCmsUrl ? 'Edit Vanity URL' : 'Add Vanity URL'"></button>
+                                </dt>
+                                <dd class="mt-1 flex flex-col space-y-1">
+                                    <template x-if="site.vanityCmsUrl">
+                                        <a :href="site.vanityCmsUrl" target="_blank" class="text-sm text-purple-600 hover:text-purple-500 hover:underline inline-flex items-center break-all font-medium">
+                                            <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                            <span x-text="site.vanityCmsUrl"></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="site.cmsUrl">
+                                        <a :href="site.cmsUrl" target="_blank" class="text-purple-600 hover:text-purple-500 hover:underline inline-flex items-center break-all" :class="site.vanityCmsUrl ? 'text-xs text-gray-500 hover:text-gray-700' : 'text-sm'">
+                                            <template x-if="!site.vanityCmsUrl">
+                                                <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                            </template>
+                                            <span x-text="site.cmsUrl"></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="!site.vanityCmsUrl && !site.cmsUrl">
+                                        <span class="text-sm text-gray-400 italic">Not set</span>
+                                    </template>
+                                </dd>
+                            </div>
+
+                            <!-- CMS Preview URL -->
+                            <div>
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider flex justify-between items-center mt-3">
+                                    CMS Preview URL
+                                    <button @click="openInlineEdit(site, 'vanityPreviewCmsUrl', 'CMS Preview URL')" class="text-xs text-blue-600 hover:text-blue-500" x-text="site.vanityPreviewCmsUrl ? 'Edit Vanity URL' : 'Add Vanity URL'"></button>
+                                </dt>
+                                <dd class="mt-1 flex flex-col space-y-1">
+                                    <template x-if="site.vanityPreviewCmsUrl">
+                                        <a :href="site.vanityPreviewCmsUrl" target="_blank" class="text-sm text-pink-600 hover:text-pink-500 hover:underline inline-flex items-center break-all font-medium">
+                                            <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            <span x-text="site.vanityPreviewCmsUrl"></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="site.previewCmsUrl">
+                                        <a :href="site.previewCmsUrl" target="_blank" class="text-pink-600 hover:text-pink-500 hover:underline inline-flex items-center break-all" :class="site.vanityPreviewCmsUrl ? 'text-xs text-gray-500 hover:text-gray-700' : 'text-sm'">
+                                            <template x-if="!site.vanityPreviewCmsUrl">
+                                                <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            </template>
+                                            <span x-text="site.previewCmsUrl"></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="!site.vanityPreviewCmsUrl && !site.previewCmsUrl">
+                                        <span class="text-sm text-gray-400 italic">Not set</span>
+                                    </template>
+                                </dd>
+                            </div>
+
+                            <!-- Repository -->
                             <template x-if="site.githubUrl">
-                                <div class="sm:col-span-2">
+                                <div class="pt-2 border-t border-gray-100">
                                     <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Repository</dt>
                                     <dd class="mt-1 text-sm text-gray-900">
                                         <a :href="site.githubUrl" target="_blank" class="text-gray-700 hover:text-black inline-flex items-center break-all">
@@ -119,34 +200,16 @@
                                 </div>
                             </template>
 
-                            <div class="sm:col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100 mt-2">
-                                <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Costs</h4>
-                                <div class="grid grid-cols-3 gap-2 text-center">
-                                    <div>
-                                        <span class="block text-xs text-gray-500">Build</span>
-                                        <span class="font-medium text-sm text-gray-900" x-text="formatCurrency(site.buildingCost)"></span>
-                                    </div>
-                                    <div>
-                                        <span class="block text-xs text-gray-500">Host/mo</span>
-                                        <span class="font-medium text-sm text-gray-900" x-text="formatCurrency(site.hostingCost)"></span>
-                                    </div>
-                                    <div>
-                                        <span class="block text-xs text-gray-500">License/mo</span>
-                                        <span class="font-medium text-sm text-gray-900" x-text="formatCurrency(site.licenseCost)"></span>
-                                    </div>
-                                </div>
+                            <div class="pt-4 mt-4 border-t border-gray-100 flex gap-2">
+                                <button @click="openCostingsModal(site)" class="flex-1 inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Costings
+                                </button>
+                                <button @click="deleteSite(site)" class="inline-flex justify-center items-center px-3 py-2 border border-red-200 shadow-sm text-sm font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all" title="Delete Site">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
                             </div>
-                        </dl>
-                    </div>
-                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
-                        <button @click="openEditModal(site)" class="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center" title="Edit Site">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                            Edit
-                        </button>
-                        <button @click="deleteSite(site)" class="text-sm font-medium text-red-600 hover:text-red-500 flex items-center" title="Delete Site">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            Delete
-                        </button>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -165,43 +228,21 @@
     </main>
 
     <!-- Edit Site Modal -->
-    <div x-show="isEditModalOpen" class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
+    <div x-show="isEditModalOpen" class="fixed z-20 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div x-show="isEditModalOpen" @click="closeEditModal()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
             <div x-show="isEditModalOpen" class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <form @submit.prevent="saveSite">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">Edit Site</h3>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                            <span x-text="editForm.value ? 'Edit Vanity' : 'Add Vanity'"></span> <span x-text="editForm.fieldLabel"></span>
+                        </h3>
                         
                         <div class="space-y-4">
                             <div>
-                                <label for="productionUrl" class="block text-sm font-medium text-gray-700">Production URL</label>
-                                <input type="url" id="productionUrl" x-model="editForm.productionUrl" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            </div>
-                            
-                            <div class="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label for="buildingCost" class="block text-sm font-medium text-gray-700">Build Cost</label>
-                                    <div class="mt-1 relative rounded-md shadow-sm">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">$</span></div>
-                                        <input type="number" step="0.01" id="buildingCost" x-model="editForm.buildingCost" class="pl-7 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label for="hostingCost" class="block text-sm font-medium text-gray-700">Hosting/mo</label>
-                                    <div class="mt-1 relative rounded-md shadow-sm">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">$</span></div>
-                                        <input type="number" step="0.01" id="hostingCost" x-model="editForm.hostingCost" class="pl-7 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label for="licenseCost" class="block text-sm font-medium text-gray-700">License/mo</label>
-                                    <div class="mt-1 relative rounded-md shadow-sm">
-                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">$</span></div>
-                                        <input type="number" step="0.01" id="licenseCost" x-model="editForm.licenseCost" class="pl-7 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                    </div>
-                                </div>
+                                <label for="vanityInput" class="block text-sm font-medium text-gray-700">Custom Domain / Vanity URL</label>
+                                <input type="url" id="vanityInput" x-model="editForm.value" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                             </div>
                         </div>
                     </div>
@@ -214,6 +255,103 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Costings Modal -->
+    <div x-show="isCostingsModalOpen" class="fixed z-30 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="isCostingsModalOpen" @click="closeCostingsModal()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="isCostingsModalOpen" class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            Costings: <span class="text-gray-500" x-text="currentSite?.name"></span>
+                        </h3>
+                        <button @click="closeCostingsModal()" class="text-gray-400 hover:text-gray-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- Add/Edit Costing Form -->
+                    <form @submit.prevent="saveCosting" class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h4 class="text-sm font-medium text-gray-900 mb-3" x-text="costingForm.id ? 'Edit Costing' : 'Add New Costing'"></h4>
+                        <div class="grid grid-cols-1 gap-y-4 sm:grid-cols-6 sm:gap-x-4">
+                            <div class="sm:col-span-3">
+                                <label class="block text-xs font-medium text-gray-700">Description</label>
+                                <input type="text" x-model="costingForm.description" required placeholder="e.g. Development" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div class="sm:col-span-1">
+                                <label class="block text-xs font-medium text-gray-700">Amount</label>
+                                <input type="number" step="0.01" x-model="costingForm.amount" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700">Frequency</label>
+                                <select x-model="costingForm.frequency" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="one time">One time</option>
+                                    <option value="monthly">Monthly</option>
+                                    <option value="yearly">Yearly</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700">Date</label>
+                                <input type="date" x-model="costingForm.created_at" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div class="sm:col-span-2 flex items-center pt-5">
+                                <label class="flex items-center space-x-2 cursor-pointer">
+                                    <input type="checkbox" x-model="costingForm.is_paid" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="text-sm text-gray-700">Paid?</span>
+                                </label>
+                            </div>
+                            <div class="sm:col-span-2 flex items-end space-x-2">
+                                <button type="submit" class="w-full inline-flex justify-center items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" x-text="costingForm.id ? 'Save' : 'Add'">
+                                </button>
+                                <button type="button" x-show="costingForm.id" @click="cancelEditCosting()" class="w-full inline-flex justify-center items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs text-gray-500 italic">
+                            * Note: Active subscriptions (Monthly/Yearly) are automatically invoiced by the system cron. 
+                        </p>
+                    </form>
+
+                    <!-- Costings List -->
+                    <div class="mt-4">
+                        <div x-show="loadingCostings" class="text-center py-4 text-sm text-gray-500">Loading costings...</div>
+                        <ul x-show="!loadingCostings && siteCostings.length > 0" class="divide-y divide-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                            <template x-for="costing in siteCostings" :key="costing.id">
+                                <li class="px-4 py-3 bg-white flex items-center justify-between hover:bg-gray-50">
+                                    <div class="flex flex-col">
+                                        <span class="text-sm font-medium text-gray-900" x-text="costing.description"></span>
+                                        <div class="flex items-center mt-1 text-xs text-gray-500 space-x-2">
+                                            <span x-text="formatCurrency(costing.amount) + ' (' + costing.frequency + ')'"></span>
+                                            <span>&bull;</span>
+                                            <span :class="costing.is_paid ? 'text-green-600 font-medium' : 'text-yellow-600 font-medium'" x-text="costing.is_paid ? 'Paid' : 'Unpaid'"></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button @click="editCosting(costing)" class="text-xs bg-white hover:bg-gray-50 text-gray-700 px-2 py-1 rounded border border-gray-200" title="Edit Costing">
+                                            Edit
+                                        </button>
+                                        <button @click="toggleCostingPaid(costing)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded border border-gray-200">
+                                            Mark <span x-text="costing.is_paid ? 'Unpaid' : 'Paid'"></span>
+                                        </button>
+                                        <button @click="deleteCosting(costing.id)" class="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
+                                </li>
+                            </template>
+                        </ul>
+                        <div x-show="!loadingCostings && siteCostings.length === 0" class="text-center py-6 text-sm text-gray-500 border border-dashed border-gray-300 rounded-lg">
+                            No costings added yet.
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
@@ -230,13 +368,33 @@
             loading: true,
             error: null,
             isEditModalOpen: false,
-            editForm: { id: '', productionUrl: '', buildingCost: 0, hostingCost: 0, licenseCost: 0 },
+            editForm: { id: '', url: '', previewUrl: '', cmsUrl: '' },
+            isCostingsModalOpen: false,
+            currentSite: null,
+            siteCostings: [],
+            loadingCostings: false,
+            costingForm: { description: '', amount: '', is_paid: false, frequency: 'one time' },
+            currency: 'USD',
 
             async init() {
+                await this.fetchSettings();
                 await this.fetchSites();
                 setInterval(() => {
-                    if(!this.isEditModalOpen) this.fetchSites(true);
+                    if(!this.isEditModalOpen && !this.isCostingsModalOpen) this.fetchSites(true);
                 }, 10000);
+            },
+
+            async fetchSettings() {
+                const token = localStorage.getItem('bricklayer_token');
+                try {
+                    const res = await fetch('/api/settings', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.currency = data.currency || 'USD';
+                    }
+                } catch (err) {}
             },
 
             async fetchSites(silent = false) {
@@ -267,15 +425,15 @@
                 }
             },
 
-            openEditModal(site) {
-                this.editForm = { 
-                    id: site.id, 
-                    productionUrl: site.productionUrl || '', 
-                    buildingCost: site.buildingCost || 0,
-                    hostingCost: site.hostingCost || 0,
-                    licenseCost: site.licenseCost || 0
+            openInlineEdit(site, field, label) {
+                this.editForm = {
+                    id: site.id,
+                    field: field,
+                    fieldLabel: label,
+                    value: site[field] || ''
                 };
                 this.isEditModalOpen = true;
+                setTimeout(() => { document.getElementById('vanityInput')?.focus() }, 50);
             },
 
             closeEditModal() {
@@ -284,6 +442,9 @@
 
             async saveSite() {
                 const token = localStorage.getItem('bricklayer_token');
+                const payload = {};
+                payload[this.editForm.field] = this.editForm.value;
+
                 try {
                     const res = await fetch(`/api/sites/${encodeURIComponent(this.editForm.id)}`, {
                         method: 'PUT',
@@ -291,12 +452,7 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            productionUrl: this.editForm.productionUrl,
-                            buildingCost: this.editForm.buildingCost,
-                            hostingCost: this.editForm.hostingCost,
-                            licenseCost: this.editForm.licenseCost
-                        })
+                        body: JSON.stringify(payload)
                     });
                     if (res.ok) {
                         this.fetchSites();
@@ -307,6 +463,117 @@
                 } catch (e) {
                     alert('Network error updating site');
                 }
+            },
+
+            // --- Costings Logic ---
+            openCostingsModal(site) {
+                this.currentSite = site;
+                this.isCostingsModalOpen = true;
+                this.cancelEditCosting();
+                this.fetchCostings();
+            },
+
+            closeCostingsModal() {
+                this.isCostingsModalOpen = false;
+                this.currentSite = null;
+            },
+
+            async fetchCostings() {
+                if(!this.currentSite) return;
+                this.loadingCostings = true;
+                const token = localStorage.getItem('bricklayer_token');
+                try {
+                    const res = await fetch(`/api/sites/${encodeURIComponent(this.currentSite.id)}/costings`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.siteCostings = data.costings || [];
+                    }
+                } catch(e) {}
+                this.loadingCostings = false;
+            },
+
+            editCosting(costing) {
+                this.costingForm = { ...costing };
+                if (this.costingForm.created_at) {
+                    this.costingForm.created_at = this.costingForm.created_at.substring(0, 10);
+                }
+            },
+
+            cancelEditCosting() {
+                const today = new Date().toISOString().substring(0, 10);
+                this.costingForm = { description: '', amount: '', is_paid: false, frequency: 'one time', created_at: today };
+            },
+
+            async saveCosting() {
+                if(!this.currentSite) return;
+                const token = localStorage.getItem('bricklayer_token');
+                
+                try {
+                    let url, method;
+                    if (this.costingForm.id) {
+                        url = `/api/costings/${this.costingForm.id}`;
+                        method = 'PUT';
+                    } else {
+                        url = `/api/sites/${encodeURIComponent(this.currentSite.id)}/costings`;
+                        method = 'POST';
+                    }
+
+                    const res = await fetch(url, {
+                        method: method,
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.costingForm)
+                    });
+                    
+                    if (res.ok) {
+                        this.cancelEditCosting();
+                        this.fetchCostings();
+                    } else {
+                        alert('Failed to save costing');
+                    }
+                } catch(e) {
+                    alert('Network error saving costing');
+                }
+            },
+
+            async toggleCostingPaid(costing) {
+                const token = localStorage.getItem('bricklayer_token');
+                try {
+                    const res = await fetch(`/api/costings/${costing.id}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            description: costing.description,
+                            amount: costing.amount,
+                            frequency: costing.frequency,
+                            is_paid: !costing.is_paid
+                        })
+                    });
+                    if (res.ok) {
+                        this.fetchCostings();
+                    }
+                } catch(e) {}
+            },
+
+            async deleteCosting(id) {
+                if(!confirm('Delete this costing?')) return;
+                const token = localStorage.getItem('bricklayer_token');
+                try {
+                    const res = await fetch(`/api/costings/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        this.fetchCostings();
+                    }
+                } catch(e) {}
             },
 
             async deleteSite(site) {
@@ -343,7 +610,7 @@
             },
 
             formatCurrency(val) {
-                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: this.currency || 'USD' }).format(val || 0);
             }
         }));
     });

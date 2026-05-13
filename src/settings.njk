@@ -15,6 +15,7 @@ layout: base
                 </div>
                 <div class="flex items-center space-x-6">
                     <a href="/" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Dashboard</a>
+                    <a href="/finance.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Finance</a>
                     <a href="/users.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Users</a>
                     <a href="/settings.html" class="text-sm font-medium text-gray-900 transition-colors">Settings</a>
                     <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
@@ -136,6 +137,28 @@ layout: base
                 <p class="mt-2 text-sm text-gray-500" id="password-description">Changing your password will update your login token and log you out elsewhere.</p>
 
                 <hr class="border-gray-200">
+
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Localization Settings</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="currency" class="block text-sm font-medium text-gray-700">Default Currency</label>
+                            <div class="mt-1">
+                                <select id="currency" x-model="currency" class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="USD">USD ($)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="AUD">AUD (A$)</option>
+                                    <option value="CAD">CAD (C$)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CNY">CNY (¥)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-gray-200">
                 
                 <div>
                     <h3 class="text-lg font-medium text-gray-900 mb-4">GitHub Login Settings</h3>
@@ -188,6 +211,7 @@ layout: base
             confirmPassword: '',
             githubClientId: '',
             githubClientSecret: '',
+            currency: 'USD',
             showCurrentPassword: false,
             showNewPassword: false,
             showConfirmPassword: false,
@@ -260,6 +284,7 @@ layout: base
                         this.email = data.email || '';
                         this.githubClientId = data.githubClientId || '';
                         this.githubClientSecret = data.githubClientSecret || '';
+                        this.currency = data.currency || 'USD';
                     }
                 } catch (err) {
                     this.error = 'Network error loading settings.';
@@ -290,7 +315,8 @@ layout: base
                             currentPassword: this.currentPassword,
                             password: this.password ? this.password : undefined,
                             githubClientId: this.githubClientId,
-                            githubClientSecret: this.githubClientSecret
+                            githubClientSecret: this.githubClientSecret,
+                            currency: this.currency
                         })
                     });
 

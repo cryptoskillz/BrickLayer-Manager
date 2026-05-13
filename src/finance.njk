@@ -1,0 +1,466 @@
+---
+title: Finance Report | Bricklayer Manager
+layout: base
+---
+<div class="min-h-screen bg-gray-50 flex flex-col" x-data="finance()">
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md mr-3">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900 tracking-tight">Bricklayer <span class="font-normal text-gray-500">Manager</span></h1>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="/" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Dashboard</a>
+                    <a href="/finance.html" class="text-sm font-medium text-gray-900 transition-colors">Finance</a>
+                    <a href="/users.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Users</a>
+                    <a href="/settings.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Settings</a>
+                    <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="flex items-center justify-between mb-8 border-b border-gray-200 pb-5">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">Finance Report</h2>
+                <p class="mt-1 text-sm text-gray-500">Comprehensive cost breakdown for all active properties.</p>
+            </div>
+            <div class="flex space-x-3">
+                <button @click="exportCSV()" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Export CSV
+                </button>
+                <button @click="window.print()" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print / Export PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div x-show="loading" class="flex flex-col items-center justify-center py-20" x-cloak>
+            <div class="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+            <p class="text-gray-500 font-medium">Loading finance report...</p>
+        </div>
+
+        <!-- Error State -->
+        <div x-show="error" class="rounded-xl bg-red-50 p-4 mb-6 border border-red-100" x-cloak>
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800" x-text="error"></h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div x-show="!loading && !error" class="bg-white shadow sm:rounded-lg mb-6 p-4 border border-gray-200" x-cloak>
+            <div class="flex flex-wrap gap-4 items-end">
+                <div class="flex-1 min-w-[180px]">
+                    <label for="siteFilter" class="block text-sm font-medium text-gray-700">Filter by Site</label>
+                    <select id="siteFilter" x-model="filters.site" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="">All Sites</option>
+                        <template x-for="site in uniqueSites" :key="site">
+                            <option :value="site" x-text="site"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[180px]">
+                    <label for="freqFilter" class="block text-sm font-medium text-gray-700">Report View</label>
+                    <select id="freqFilter" x-model="filters.frequency" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="">Comprehensive (All)</option>
+                        <option value="monthly">Monthly Report View</option>
+                        <option value="yearly">Yearly Report View</option>
+                        <option value="one time">One-Time Costs</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]" x-show="filters.frequency === 'monthly'">
+                    <label for="monthFilter" class="block text-sm font-medium text-gray-700">Target Month</label>
+                    <select id="monthFilter" x-model="filters.targetMonth" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <template x-for="month in availableMonths" :key="month.value">
+                            <option :value="month.value" x-text="month.label"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]" x-show="filters.frequency === 'yearly'">
+                    <label for="yearFilter" class="block text-sm font-medium text-gray-700">Target Year</label>
+                    <select id="yearFilter" x-model="filters.targetYear" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <template x-for="year in availableYears" :key="year.value">
+                            <option :value="year.value" x-text="year.label"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label for="statusFilter" class="block text-sm font-medium text-gray-700">Payment Status</label>
+                    <select id="statusFilter" x-model="filters.status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
+                        <option value="all">All</option>
+                        <option value="paid">Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                    </select>
+                </div>
+                <div class="flex-none w-full sm:w-auto mt-2 sm:mt-0">
+                    <button @click="resetFilters" class="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div x-show="!loading && !error" class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-6" x-cloak>
+            <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total Outstanding</dt>
+                    <dd class="mt-1 text-2xl font-semibold text-red-600" x-text="formatCurrency(globalTotalUnpaid)"></dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total Paid</dt>
+                    <dd class="mt-1 text-2xl font-semibold text-green-600" x-text="formatCurrency(globalTotalPaid)"></dd>
+                </div>
+            </div>
+            <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200 bg-blue-50">
+                <div class="px-4 py-5 sm:p-6">
+                    <dt class="text-sm font-medium text-blue-800 truncate">Monthly Run Rate</dt>
+                    <dd class="mt-1 text-2xl font-semibold text-blue-900" x-text="formatCurrency(monthlyRunRate)"></dd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Report -->
+        <div x-show="!loading && !error" class="bg-white shadow overflow-hidden sm:rounded-lg mb-8 border border-gray-200" x-cloak>
+            <div class="px-4 py-5 sm:p-6 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    <span x-show="filters.frequency === 'monthly'">Monthly</span>
+                    <span x-show="filters.frequency === 'yearly'">Yearly</span>
+                    <span x-show="filters.frequency === 'one time'">One-Time</span>
+                    <span x-show="filters.frequency === ''">Summary</span>
+                    Statement
+                    <span x-show="filters.site" class="text-gray-500 font-normal" x-text="'for ' + filters.site"></span>
+                </h3>
+                <div class="mt-2 max-w-xl text-sm text-gray-500">
+                    <p>Filtered liabilities and active costings across your properties.</p>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property / Site</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-for="item in filteredReport" :key="item.id">
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.site_name"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(item.created_at)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="item.description"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="capitalize" x-text="item.projected_frequency || item.frequency"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span x-show="item.is_paid" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Paid
+                                    </span>
+                                    <span x-show="!item.is_paid" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Unpaid
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium" x-text="formatCurrency(item.amount)"></td>
+                            </tr>
+                        </template>
+                        <tr x-show="filteredReport.length === 0">
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500 text-sm">No costings recorded for the selected filters.</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-gray-50" x-show="filteredReport.length > 0">
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Filtered Total Outstanding:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-right" x-text="formatCurrency(filteredTotalUnpaid)"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Filtered Total Paid:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600 text-right" x-text="formatCurrency(filteredTotalPaid)"></td>
+                        </tr>
+                        <tr class="border-t-2 border-gray-200">
+                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right uppercase">Filtered Grand Total:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right" x-text="formatCurrency(filteredTotalPaid + filteredTotalUnpaid)"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    if (!localStorage.getItem('bricklayer_token')) {
+        window.location.href = '/login';
+    }
+
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('finance', () => ({
+            report: [],
+            currency: 'USD',
+            loading: true,
+            error: null,
+            filters: {
+                site: '',
+                frequency: '',
+                status: 'all',
+                targetMonth: '',
+                targetYear: ''
+            },
+
+            async init() {
+                await this.fetchReport();
+            },
+
+            async fetchReport() {
+                this.loading = true;
+                const token = localStorage.getItem('bricklayer_token');
+
+                try {
+                    const response = await fetch('/api/finance-report', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.status === 401) {
+                        this.logout();
+                        return;
+                    }
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        this.report = data.report || [];
+                        this.currency = data.currency || 'USD';
+                    } else {
+                        this.error = data.error || 'Failed to load report';
+                    }
+                } catch (err) {
+                    this.error = 'Network error. Could not connect to API.';
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            resetFilters() {
+                this.filters.site = '';
+                this.filters.frequency = '';
+                this.filters.status = 'all';
+                this.filters.targetMonth = this.availableMonths.length > 0 ? this.availableMonths[0].value : '';
+                this.filters.targetYear = this.availableYears.length > 0 ? this.availableYears[0].value : '';
+            },
+
+            get availableYears() {
+                const years = new Set();
+                const currentYear = new Date().getFullYear().toString();
+                years.add(currentYear);
+                
+                this.report.forEach(item => {
+                    if (item.created_at) {
+                        years.add(new Date(item.created_at).getFullYear().toString());
+                    }
+                });
+                
+                return Array.from(years).sort((a, b) => b.localeCompare(a)).map(val => ({
+                    value: val,
+                    label: val
+                }));
+            },
+
+            get availableMonths() {
+                const months = new Set();
+                const now = new Date();
+                const currentMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                months.add(currentMonthValue);
+                
+                this.report.forEach(item => {
+                    if (item.created_at) {
+                        const d = new Date(item.created_at);
+                        const monthValue = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        months.add(monthValue);
+                    }
+                });
+                
+                return Array.from(months).sort((a, b) => b.localeCompare(a)).map(val => {
+                    const [y, m] = val.split('-');
+                    const date = new Date(parseInt(y), parseInt(m) - 1, 1);
+                    return {
+                        value: val,
+                        label: date.toLocaleString('default', { month: 'long', year: 'numeric' })
+                    };
+                });
+            },
+
+            get uniqueSites() {
+                const sites = new Set();
+                this.report.forEach(item => {
+                    if (item.site_name) sites.add(item.site_name);
+                });
+                return Array.from(sites).sort();
+            },
+
+            get filteredReport() {
+                // Ensure targetMonth is set if available
+                if (this.filters.frequency === 'monthly' && !this.filters.targetMonth && this.availableMonths.length > 0) {
+                    this.filters.targetMonth = this.availableMonths[0].value;
+                }
+                
+                // Ensure targetYear is set if available
+                if (this.filters.frequency === 'yearly' && !this.filters.targetYear && this.availableYears.length > 0) {
+                    this.filters.targetYear = this.availableYears[0].value;
+                }
+
+                return this.report.filter(item => {
+                    const matchSite = this.filters.site === '' || item.site_name === this.filters.site;
+                    
+                    let matchStatus = true;
+                    if (this.filters.status === 'paid') matchStatus = item.is_paid;
+                    if (this.filters.status === 'unpaid') matchStatus = !item.is_paid;
+                    
+                    let matchFreq = true;
+                    if (this.filters.frequency === 'monthly') {
+                        let targetDate = new Date();
+                        if (this.filters.targetMonth) {
+                            const [y, m] = this.filters.targetMonth.split('-');
+                            targetDate = new Date(parseInt(y), parseInt(m) - 1, 1);
+                        }
+
+                        // Check if item was incurred IN the target month
+                        let isTargetMonth = false;
+                        if (item.created_at) {
+                            const createdDate = new Date(item.created_at);
+                            isTargetMonth = createdDate.getMonth() === targetDate.getMonth() && createdDate.getFullYear() === targetDate.getFullYear();
+                        }
+                        
+                        // Check if it's an active recurring monthly subscription that was created ON OR BEFORE the target month
+                        const isMonthly = (item.frequency || '').toLowerCase() === 'monthly';
+                        let isActiveInTargetMonth = false;
+                        if (isMonthly) {
+                             const createdDate = new Date(item.created_at || Date.now());
+                             if (createdDate <= new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0)) {
+                                 isActiveInTargetMonth = true;
+                             }
+                        }
+                        
+                        matchFreq = isTargetMonth || isActiveInTargetMonth;
+                    } else if (this.filters.frequency === 'yearly') {
+                        let targetYearInt = new Date().getFullYear();
+                        if (this.filters.targetYear) {
+                            targetYearInt = parseInt(this.filters.targetYear);
+                        }
+
+                        // Check if item was incurred IN the target year
+                        let isTargetYear = false;
+                        if (item.created_at) {
+                            const createdDate = new Date(item.created_at);
+                            isTargetYear = createdDate.getFullYear() === targetYearInt;
+                        }
+                        
+                        // Check if it's an active recurring subscription that was created ON OR BEFORE the target year
+                        const isRecurring = ['monthly', 'yearly'].includes((item.frequency || '').toLowerCase());
+                        let isActiveInTargetYear = false;
+                        if (isRecurring) {
+                             const createdDate = new Date(item.created_at || Date.now());
+                             if (createdDate.getFullYear() <= targetYearInt) {
+                                 isActiveInTargetYear = true;
+                             }
+                        }
+                        
+                        matchFreq = isTargetYear || isActiveInTargetYear;
+                    } else if (this.filters.frequency === 'one time') {
+                        matchFreq = (item.frequency || '').toLowerCase() === 'one time';
+                    }
+                    
+                    return matchSite && matchFreq && matchStatus;
+                }).map(item => {
+                    // For the yearly view, project monthly costs to their annual equivalent
+                    if (this.filters.frequency === 'yearly' && (item.frequency || '').toLowerCase() === 'monthly') {
+                        return { ...item, original_amount: item.amount, amount: item.amount * 12, projected_frequency: 'Annualized (Monthly)' };
+                    }
+                    return item;
+                });
+            },
+
+            get monthlyRunRate() {
+                return this.report
+                    .filter(i => (i.frequency || '').toLowerCase() === 'monthly')
+                    .reduce((sum, item) => sum + item.amount, 0);
+            },
+
+            get globalTotalPaid() {
+                return this.report.filter(i => i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            },
+
+            get globalTotalUnpaid() {
+                return this.report.filter(i => !i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            },
+
+            get filteredTotalPaid() {
+                return this.filteredReport.filter(i => i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            },
+
+            get filteredTotalUnpaid() {
+                return this.filteredReport.filter(i => !i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            },
+
+            formatCurrency(amount) {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: this.currency }).format(amount);
+            },
+
+            formatDate(dateStr) {
+                if (!dateStr) return 'N/A';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            },
+
+            exportCSV() {
+                if (this.filteredReport.length === 0) return;
+                
+                const headers = ['Property / Site', 'Date', 'Description', 'Frequency', 'Status', 'Amount'];
+                const rows = this.filteredReport.map(item => [
+                    `"${item.site_name || ''}"`,
+                    `"${this.formatDate(item.created_at)}"`,
+                    `"${item.description || ''}"`,
+                    `"${item.projected_frequency || item.frequency || ''}"`,
+                    `"${item.is_paid ? 'Paid' : 'Unpaid'}"`,
+                    `"${item.amount}"`
+                ]);
+                
+                const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `finance_report_${this.filters.frequency || 'all'}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+
+            logout() {
+                localStorage.removeItem('bricklayer_token');
+                window.location.href = '/login';
+            }
+        }));
+    });
+</script>

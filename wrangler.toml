@@ -21,3 +21,6 @@ database_id = "e96a5716-ce7d-41d8-8018-9f8b62465d04"
 
 [env.preview]
 name = "bricklayer-manager-preview"
+
+[triggers]
+crons = ["0 0 * * *"]
