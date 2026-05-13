@@ -5,8 +5,9 @@ The centralized dashboard for tracking, configuring, and administering your stat
 ## Features
 
 - **Centralized Dashboard**: View and manage all deployed Bricklayer sites via an elegant, responsive web UI.
-- **Site Configuration**: Edit project URLs, set production domains, and track financial metrics (License, Build, and Hosting costs) per site.
-- **D1 Database Storage**: Robust relational data storage using Cloudflare D1 for sites, users, and global settings.
+- **Advanced Financial Reporting**: Track granular financial metrics including total outstanding costs and annualized/monthly run rates. Features advanced dashboard filtering by Target Month, Target Year, and Payment Status.
+- **Automated Recurring Costings**: Built-in Cloudflare Cron (`scheduled` task) automation seamlessly invoices active `Monthly` and `Yearly` subscriptions every day, keeping your financial statements 100% up to date.
+- **D1 Database Storage**: Robust relational data storage using Cloudflare D1 for sites, users, costings, and global settings.
 - **Role-Based Access Control**: Granular permissions via Admin, Editor, and Viewer roles.
 - **Authentication**: Secure JWT-based sessions, an automated "Forgot Password" email flow, and native **GitHub OAuth** integration.
 - **Email Routing Integration**: Native Cloudflare `cloudflare:email` support for sending user invites and password reset links.
