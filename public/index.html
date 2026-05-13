@@ -28,7 +28,8 @@
                     <h1 class="text-xl font-bold text-gray-900 tracking-tight">Bricklayer <span class="font-normal text-gray-500">Manager</span></h1>
                 </div>
                 <div class="flex items-center space-x-6">
-                    <a href="/" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Dashboard</a>
+                    <a href="/" class="text-sm font-medium text-gray-900 transition-colors">Dashboard</a>
+                    <a href="/users.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Users</a>
                     <a href="/settings.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Settings</a>
                     <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
                         Sign Out
@@ -72,7 +73,7 @@
 
         <!-- Sites Grid -->
         <div x-show="!loading && sites.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" x-cloak>
-            <template x-for="site in sites" :key="site.id || site.url || Math.random()">
+            <template x-for="site in sites" :key="site.id">
                 <div class="bg-white overflow-hidden shadow-sm border border-gray-200 rounded-2xl hover:shadow-lg transition-all duration-300 group flex flex-col h-full">
                     <div class="p-6 flex-1">
                         <div class="flex items-center justify-between mb-4">
@@ -85,53 +86,63 @@
                         
                         <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
                             <div class="sm:col-span-2">
-                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">URL</dt>
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Preview URL</dt>
                                 <dd class="mt-1 text-sm text-gray-900">
                                     <template x-if="site.url">
-                                        <div class="flex flex-col items-start">
-                                            <a :href="site.url" target="_blank" class="text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center">
-                                                <span x-text="site.url"></span>
-                                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                            </a>
-                                            
-                                            <template x-if="site.accountId && site.name">
-                                                <div class="mt-2">
-                                                    <a :href="`https://dash.cloudflare.com/${site.accountId}/workers/services/view/${site.name}/${(site.environment || 'production').toLowerCase()}`" target="_blank" class="inline-flex items-center text-xs font-medium text-orange-600 hover:text-orange-500 bg-orange-50 px-2 py-1 rounded-md border border-orange-100 hover:border-orange-200 transition-colors">
-                                                        <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M16.59 10.37A2.29 2.29 0 0 0 16.59 5.8a1.59 1.59 0 0 0-1.58-1.58A4.14 4.14 0 0 0 11 5.8a1.59 1.59 0 0 0-1.58 1.58 2.29 2.29 0 0 0 0 4.57 1.59 1.59 0 0 0 1.58 1.58 4.14 4.14 0 0 0 4.01-1.58 1.59 1.59 0 0 0 1.58-1.58zM4.14 10.37a2.29 2.29 0 0 0 0-4.57A1.59 1.59 0 0 0 2.56 4.22a4.14 4.14 0 0 0 4.01-1.58 1.59 1.59 0 0 0 1.58 1.58 2.29 2.29 0 0 0 0 4.57 1.59 1.59 0 0 0-1.58 1.58 4.14 4.14 0 0 0-4.01-1.58 1.59 1.59 0 0 0-1.58-1.58zM19.86 19.78a2.29 2.29 0 0 0 0-4.57 1.59 1.59 0 0 0-1.58-1.58 4.14 4.14 0 0 0-4.01-1.58 1.59 1.59 0 0 0-1.58 1.58 2.29 2.29 0 0 0 0 4.57 1.59 1.59 0 0 0 1.58 1.58 4.14 4.14 0 0 0 4.01-1.58 1.59 1.59 0 0 0 1.58-1.58zM7.41 19.78a2.29 2.29 0 0 0 0-4.57 1.59 1.59 0 0 0-1.58-1.58 4.14 4.14 0 0 0-4.01-1.58 1.59 1.59 0 0 0-1.58 1.58 2.29 2.29 0 0 0 0 4.57 1.59 1.59 0 0 0 1.58 1.58 4.14 4.14 0 0 0 4.01-1.58A1.59 1.59 0 0 0 7.41 19.78z"></path></svg>
-                                                        View Cloudflare Worker
-                                                    </a>
-                                                </div>
-                                            </template>
-                                        </div>
-                                    </template>
-                                    <template x-if="!site.url">
-                                        <span class="text-gray-400 italic">Not deployed yet</span>
+                                        <a :href="site.url" target="_blank" class="text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center break-all">
+                                            <span x-text="site.url"></span>
+                                        </a>
                                     </template>
                                 </dd>
                             </div>
-                            
+
+                            <template x-if="site.productionUrl">
+                                <div class="sm:col-span-2">
+                                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Production URL</dt>
+                                    <dd class="mt-1 text-sm text-gray-900">
+                                        <a :href="site.productionUrl" target="_blank" class="text-green-600 hover:text-green-500 hover:underline inline-flex items-center break-all">
+                                            <span x-text="site.productionUrl"></span>
+                                        </a>
+                                    </dd>
+                                </div>
+                            </template>
+
                             <template x-if="site.githubUrl">
                                 <div class="sm:col-span-2">
                                     <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Repository</dt>
                                     <dd class="mt-1 text-sm text-gray-900">
-                                        <a :href="site.githubUrl" target="_blank" class="text-gray-700 hover:text-black inline-flex items-center">
-                                            <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path></svg>
+                                        <a :href="site.githubUrl" target="_blank" class="text-gray-700 hover:text-black inline-flex items-center break-all">
+                                            <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path></svg>
                                             <span x-text="site.githubUrl.split('github.com/')[1] || site.githubUrl"></span>
                                         </a>
                                     </dd>
                                 </div>
                             </template>
-                            <div class="sm:col-span-1">
-                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Environment</dt>
-                                <dd class="mt-1 text-sm text-gray-900 font-medium" x-text="site.environment || 'Production'"></dd>
-                            </div>
-                            <div class="sm:col-span-1">
-                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</dt>
-                                <dd class="mt-1 text-sm text-gray-900" x-text="formatDate(site.lastUpdated)"></dd>
+
+                            <div class="sm:col-span-2 bg-gray-50 p-3 rounded-lg border border-gray-100 mt-2">
+                                <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Costs</h4>
+                                <div class="grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <span class="block text-xs text-gray-500">Build</span>
+                                        <span class="font-medium text-sm text-gray-900" x-text="formatCurrency(site.buildingCost)"></span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-xs text-gray-500">Host/mo</span>
+                                        <span class="font-medium text-sm text-gray-900" x-text="formatCurrency(site.hostingCost)"></span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-xs text-gray-500">License/mo</span>
+                                        <span class="font-medium text-sm text-gray-900" x-text="formatCurrency(site.licenseCost)"></span>
+                                    </div>
+                                </div>
                             </div>
                         </dl>
                     </div>
-                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end items-center">
+                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+                        <button @click="openEditModal(site)" class="text-sm font-medium text-blue-600 hover:text-blue-500 flex items-center" title="Edit Site">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            Edit
+                        </button>
                         <button @click="deleteSite(site)" class="text-sm font-medium text-red-600 hover:text-red-500 flex items-center" title="Delete Site">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             Delete
@@ -152,10 +163,63 @@
             </p>
         </div>
     </main>
+
+    <!-- Edit Site Modal -->
+    <div x-show="isEditModalOpen" class="fixed z-10 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="isEditModalOpen" @click="closeEditModal()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="isEditModalOpen" class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form @submit.prevent="saveSite">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">Edit Site</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="productionUrl" class="block text-sm font-medium text-gray-700">Production URL</label>
+                                <input type="url" id="productionUrl" x-model="editForm.productionUrl" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label for="buildingCost" class="block text-sm font-medium text-gray-700">Build Cost</label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">$</span></div>
+                                        <input type="number" step="0.01" id="buildingCost" x-model="editForm.buildingCost" class="pl-7 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="hostingCost" class="block text-sm font-medium text-gray-700">Hosting/mo</label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">$</span></div>
+                                        <input type="number" step="0.01" id="hostingCost" x-model="editForm.hostingCost" class="pl-7 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="licenseCost" class="block text-sm font-medium text-gray-700">License/mo</label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-gray-500 sm:text-sm">$</span></div>
+                                        <input type="number" step="0.01" id="licenseCost" x-model="editForm.licenseCost" class="pl-7 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Save Changes
+                        </button>
+                        <button type="button" @click="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-    // Ensure user is authenticated before showing page content
     if (!localStorage.getItem('bricklayer_token')) {
         window.location.href = '/login';
     }
@@ -165,26 +229,24 @@
             sites: [],
             loading: true,
             error: null,
+            isEditModalOpen: false,
+            editForm: { id: '', productionUrl: '', buildingCost: 0, hostingCost: 0, licenseCost: 0 },
 
             async init() {
                 await this.fetchSites();
                 setInterval(() => {
-                    this.fetchSites(true);
+                    if(!this.isEditModalOpen) this.fetchSites(true);
                 }, 10000);
             },
 
             async fetchSites(silent = false) {
-                if (!silent) {
-                    this.loading = true;
-                }
+                if (!silent) this.loading = true;
                 this.error = null;
                 const token = localStorage.getItem('bricklayer_token');
 
                 try {
                     const response = await fetch('/api/sites', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
 
                     if (response.status === 401) {
@@ -193,7 +255,6 @@
                     }
 
                     const data = await response.json();
-                    
                     if (response.ok) {
                         this.sites = data.sites || [];
                     } else {
@@ -206,25 +267,60 @@
                 }
             },
 
-            async deleteSite(site) {
-                const siteId = site.id || site.name || site.url;
-                if (!siteId) return;
+            openEditModal(site) {
+                this.editForm = { 
+                    id: site.id, 
+                    productionUrl: site.productionUrl || '', 
+                    buildingCost: site.buildingCost || 0,
+                    hostingCost: site.hostingCost || 0,
+                    licenseCost: site.licenseCost || 0
+                };
+                this.isEditModalOpen = true;
+            },
 
-                if (!confirm(`Are you sure you want to delete ${site.name || 'this site'}?\n\nPlease delete locally as well.`)) {
-                    return;
+            closeEditModal() {
+                this.isEditModalOpen = false;
+            },
+
+            async saveSite() {
+                const token = localStorage.getItem('bricklayer_token');
+                try {
+                    const res = await fetch(`/api/sites/${encodeURIComponent(this.editForm.id)}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            productionUrl: this.editForm.productionUrl,
+                            buildingCost: this.editForm.buildingCost,
+                            hostingCost: this.editForm.hostingCost,
+                            licenseCost: this.editForm.licenseCost
+                        })
+                    });
+                    if (res.ok) {
+                        this.fetchSites();
+                        this.closeEditModal();
+                    } else {
+                        alert('Failed to update site');
+                    }
+                } catch (e) {
+                    alert('Network error updating site');
                 }
+            },
+
+            async deleteSite(site) {
+                if (!confirm(`Are you sure you want to delete ${site.name || 'this site'}?`)) return;
 
                 const token = localStorage.getItem('bricklayer_token');
                 try {
-                    const response = await fetch(`/api/sites/${encodeURIComponent(siteId)}`, {
+                    const response = await fetch(`/api/sites/${encodeURIComponent(site.id)}`, {
                         method: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
 
                     if (response.ok) {
-                        this.sites = this.sites.filter(s => (s.id || s.name || s.url) !== siteId);
+                        this.sites = this.sites.filter(s => s.id !== site.id);
                     } else {
                         alert('Failed to delete site.');
                     }
@@ -242,11 +338,12 @@
                 if (!dateString) return 'Never';
                 const date = new Date(dateString);
                 return new Intl.DateTimeFormat('en-US', { 
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit'
+                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
                 }).format(date);
+            },
+
+            formatCurrency(val) {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
             }
         }));
     });

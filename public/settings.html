@@ -29,6 +29,7 @@
                 </div>
                 <div class="flex items-center space-x-6">
                     <a href="/" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Dashboard</a>
+                    <a href="/users.html" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">Users</a>
                     <a href="/settings.html" class="text-sm font-medium text-gray-900 transition-colors">Settings</a>
                     <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
                         Sign Out
@@ -148,6 +149,31 @@
                 </div>
                 <p class="mt-2 text-sm text-gray-500" id="password-description">Changing your password will update your login token and log you out elsewhere.</p>
 
+                <hr class="border-gray-200">
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">GitHub Login Settings</h3>
+                    <p class="text-sm text-gray-500 mb-4">Configure OAuth to allow users to log in with GitHub.</p>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="githubClientId" class="block text-sm font-medium text-gray-700">GitHub Client ID</label>
+                            <div class="mt-1">
+                                <input type="text" id="githubClientId" x-model="githubClientId"
+                                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="githubClientSecret" class="block text-sm font-medium text-gray-700">GitHub Client Secret</label>
+                            <div class="mt-1">
+                                <input type="password" id="githubClientSecret" x-model="githubClientSecret" placeholder="••••••••••••••••"
+                                    class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="pt-4 flex justify-end">
                     <button type="submit" :disabled="loading" 
                         class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50">
@@ -174,6 +200,8 @@
             currentPassword: '',
             password: '',
             confirmPassword: '',
+            githubClientId: '',
+            githubClientSecret: '',
             showCurrentPassword: false,
             showNewPassword: false,
             showConfirmPassword: false,
@@ -244,6 +272,8 @@
                     const data = await response.json();
                     if (response.ok) {
                         this.email = data.email || '';
+                        this.githubClientId = data.githubClientId || '';
+                        this.githubClientSecret = data.githubClientSecret || '';
                     }
                 } catch (err) {
                     this.error = 'Network error loading settings.';
@@ -272,7 +302,9 @@
                         body: JSON.stringify({
                             email: this.email,
                             currentPassword: this.currentPassword,
-                            password: this.password ? this.password : undefined
+                            password: this.password ? this.password : undefined,
+                            githubClientId: this.githubClientId,
+                            githubClientSecret: this.githubClientSecret
                         })
                     });
 

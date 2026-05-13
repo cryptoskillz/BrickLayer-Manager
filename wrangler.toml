@@ -1,5 +1,5 @@
 name = "bricklayer-manager"
-compatibility_date = "2024-05-12"
+compatibility_date = "2026-05-02"
 main = "api/worker.js"
 account_id = "8851e575353a23f4511fbe2d1a74505e"
 
@@ -10,10 +10,14 @@ directory = "./public"
 ADMIN_EMAIL = "admin@example.com"
 ADMIN_PASSWORD = "password123"
 
-[[kv_namespaces]]
-binding = "BRICKLAYER_SITES"
-id = "a1604e5a89954f2ba4b9628ab42e7823"
-preview_id = "a1604e5a89954f2ba4b9628ab42e7823"
+send_email = [
+  { name = "EMAIL_SENDER" }
+]
+
+[[d1_databases]]
+binding = "BRICKLAYER_DB"
+database_name = "bricklayer-db"
+database_id = "e96a5716-ce7d-41d8-8018-9f8b62465d04"
 
 [env.preview]
 name = "bricklayer-manager-preview"
