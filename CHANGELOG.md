@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Associated URLs Tracker**: Added a dynamic feature to the Site Management cards to track arbitrary 3rd-party URLs (e.g., custom CMS endpoints, analytics dashboards). Integrates a responsive "Manage URLs" modal and serializes data to a new `associated_urls` column in the D1 `sites` table.
+- **Granular RBAC & User Status**: The User Management table now evaluates account statuses (Active, Pending) based on the presence of passwords or active invite tokens. Added UI components to copy secure invite links directly and checkboxes to manage granular module permissions and explicit site array assignments.
+
+### Changed
+- **Finance Report Accuracy**: Overhauled the Finance logic and UI to explicitly distinguish between "Income" and "Expense" types. The dashboard now accurately calculates and displays "Total Income," "Total Expenses," and net profit/loss ("Net Balance"), complete with color-coded badges and updated CSV export columns.
+
+### Added
 - **Finance Dashboard**: Added a comprehensive "Finance Report" dashboard that calculates total outstanding and paid costs across all properties. Includes advanced filtering by Site, Report View (Monthly, Yearly, Comprehensive), Target Month, Target Year, and Payment Status.
 - **Automated Recurring Costings**: Built a Cloudflare Cron (`scheduled`) task that runs daily to automatically invoice active `Monthly` and `Yearly` subscriptions. Expired instances are cleanly archived into historical `One Time` records.
 - **Robust CLI Sync Integration**: Upgraded the `POST /api/sites` endpoint to safely handle incoming payload data from the `bricklayer manage` CLI without throwing ReferenceErrors, ensuring reliable synchronisation of frontend and CMS URLs.
