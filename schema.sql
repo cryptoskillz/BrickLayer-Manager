@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT PRIMARY KEY,
   password TEXT,
   role TEXT,
+  assigned_sites TEXT DEFAULT '[]',
+  can_finance BOOLEAN DEFAULT 0,
+  can_settings BOOLEAN DEFAULT 0,
+  can_add_transactions BOOLEAN DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -39,6 +43,7 @@ CREATE TABLE IF NOT EXISTS costings (
   site_id TEXT NOT NULL,
   description TEXT NOT NULL,
   amount REAL NOT NULL,
+  type TEXT DEFAULT 'expense',
   is_paid BOOLEAN DEFAULT 0,
   frequency TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

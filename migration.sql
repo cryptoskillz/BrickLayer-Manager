@@ -1,0 +1,6 @@
+ALTER TABLE users ADD COLUMN assigned_sites TEXT DEFAULT '[]';
+ALTER TABLE users ADD COLUMN can_finance BOOLEAN DEFAULT 0;
+ALTER TABLE users ADD COLUMN can_settings BOOLEAN DEFAULT 0;
+ALTER TABLE users ADD COLUMN can_add_transactions BOOLEAN DEFAULT 0;
+
+ALTER TABLE costings ADD COLUMN type TEXT DEFAULT 'expense';

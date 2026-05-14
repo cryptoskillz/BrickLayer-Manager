@@ -104,25 +104,35 @@ app.post('/api/login', async (c) => {
   const adminEmail = await getSetting(c.env, 'SYSTEM:ADMIN_EMAIL', c.env.ADMIN_EMAIL);
   const adminPassword = await getSetting(c.env, 'SYSTEM:ADMIN_PASSWORD', c.env.ADMIN_PASSWORD);
 
-  let userRole = null;
-  let userEmail = null;
+  let userData = null;
 
   if (email === adminEmail && password === adminPassword) {
-    userRole = 'admin';
-    userEmail = email;
+    userData = { role: 'admin', email, can_finance: 1, can_settings: 1, can_add_transactions: 1, assigned_sites: '[]' };
   } else {
     // Check normal users
     const user = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
     if (user && user.password === password) { // Simple text match for now
-      userRole = user.role;
-      userEmail = user.email;
+      userData = user;
     }
   }
 
-  if (userRole) {
+  if (userData) {
     const secret = await getJwtSecret(c.env);
-    const token = await sign({ email: userEmail, role: userRole, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 }, secret);
-    return c.json({ token, role: userRole });
+    const token = await sign({ 
+        email: userData.email, 
+        role: userData.role, 
+        can_finance: userData.can_finance,
+        can_settings: userData.can_settings,
+        can_add_transactions: userData.can_add_transactions,
+        assigned_sites: userData.assigned_sites,
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 
+    }, secret);
+    return c.json({ token, role: userData.role, permissions: {
+        can_finance: userData.can_finance,
+        can_settings: userData.can_settings,
+        can_add_transactions: userData.can_add_transactions,
+        assigned_sites: userData.assigned_sites
+    } });
   }
   
   return c.json({ error: 'Invalid credentials' }, 401);
@@ -131,7 +141,7 @@ app.post('/api/login', async (c) => {
 // Settings Endpoints
 app.get('/api/settings', authMiddleware, async (c) => {
   const user = c.get('user');
-  if (user && user.role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
+  if (user && user.role !== 'admin' && !user.can_settings) return c.json({ error: 'Forbidden' }, 403);
 
   const adminEmail = await getSetting(c.env, 'SYSTEM:ADMIN_EMAIL', c.env.ADMIN_EMAIL);
   const githubClientId = await getSetting(c.env, 'SYSTEM:GITHUB_CLIENT_ID', '');
@@ -144,13 +154,13 @@ app.get('/api/settings', authMiddleware, async (c) => {
 app.post('/api/settings', authMiddleware, async (c) => {
   try {
     const user = c.get('user');
-    if (user && user.role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
+    if (user && user.role !== 'admin' && !user.can_settings) return c.json({ error: 'Forbidden' }, 403);
 
     const { email, password, currentPassword, githubClientId, githubClientSecret, currency } = await c.req.json();
     
-    // Validate current password
+    // Validate current password only if changing email or password
     const adminPassword = await getSetting(c.env, 'SYSTEM:ADMIN_PASSWORD', c.env.ADMIN_PASSWORD);
-    if (currentPassword !== adminPassword) {
+    if ((email || password) && currentPassword !== adminPassword) {
       return c.json({ error: 'Incorrect current password' }, 403);
     }
 
@@ -286,8 +296,26 @@ app.get('/api/users', authMiddleware, async (c) => {
   if (user && user.role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
 
   try {
-    const users = await c.env.BRICKLAYER_DB.prepare('SELECT email, role, created_at FROM users').all();
-    return c.json({ users: users.results });
+    const now = Math.floor(Date.now() / 1000);
+    const users = await c.env.BRICKLAYER_DB.prepare(`
+      SELECT u.email, u.role, u.created_at, u.assigned_sites, u.can_finance, u.can_settings, u.can_add_transactions,
+             u.password IS NOT NULL as has_password,
+             (SELECT COUNT(*) FROM reset_tokens r WHERE r.email = u.email AND r.expires_at > ?) as has_token
+      FROM users u
+    `).bind(now).all();
+    
+    const userList = users.results.map(u => ({
+      email: u.email,
+      role: u.role,
+      created_at: u.created_at,
+      assigned_sites: u.assigned_sites,
+      can_finance: !!u.can_finance,
+      can_settings: !!u.can_settings,
+      can_add_transactions: !!u.can_add_transactions,
+      status: u.has_password ? 'Active' : (u.has_token ? 'Pending' : 'Action Required')
+    }));
+
+    return c.json({ users: userList });
   } catch (error) {
     return c.json({ error: 'Failed to fetch users' }, 500);
   }
@@ -296,7 +324,7 @@ app.get('/api/users', authMiddleware, async (c) => {
 // Endpoint: Create or Update User
 app.post('/api/users', authMiddleware, async (c) => {
   if (c.get('user').role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
-  const { email, password, role } = await c.req.json();
+  const { email, password, role, assigned_sites, can_finance, can_settings, can_add_transactions } = await c.req.json();
   
   if (!email || !role) return c.json({ error: 'Email and role are required' }, 400);
 
@@ -306,21 +334,45 @@ app.post('/api/users', authMiddleware, async (c) => {
   const existingUser = await c.env.BRICKLAYER_DB.prepare('SELECT email FROM users WHERE email = ?').bind(email).first();
 
   await c.env.BRICKLAYER_DB.prepare(
-    'INSERT INTO users (email, password, role) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET password = COALESCE(excluded.password, users.password), role = excluded.role'
-  ).bind(email, password || null, role).run();
+    `INSERT INTO users (email, password, role, assigned_sites, can_finance, can_settings, can_add_transactions) 
+     VALUES (?, ?, ?, ?, ?, ?, ?) 
+     ON CONFLICT(email) DO UPDATE SET 
+       password = COALESCE(excluded.password, users.password), 
+       role = excluded.role,
+       assigned_sites = excluded.assigned_sites,
+       can_finance = excluded.can_finance,
+       can_settings = excluded.can_settings,
+       can_add_transactions = excluded.can_add_transactions`
+  ).bind(
+    email, 
+    password || null, 
+    role, 
+    JSON.stringify(assigned_sites || []), 
+    can_finance ? 1 : 0, 
+    can_settings ? 1 : 0, 
+    can_add_transactions ? 1 : 0
+  ).run();
 
-  // If new user and no password provided, trigger password setup email
-  if (!existingUser && !password) {
-    const chars = '0123456789abcdef';
-    const token = Array.from({length: 32}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
-    const expiresAt = Math.floor(Date.now() / 1000) + 24 * 3600; // 24 hours
-    
-    await c.env.BRICKLAYER_DB.prepare('INSERT INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)')
-      .bind(token, email, expiresAt).run();
+  // If new user, send welcome email
+  if (!existingUser) {
+    if (!password) {
+      // No password provided, trigger password setup email
+      const chars = '0123456789abcdef';
+      const token = Array.from({length: 32}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+      const expiresAt = Math.floor(Date.now() / 1000) + 24 * 3600; // 24 hours
+      
+      await c.env.BRICKLAYER_DB.prepare('INSERT INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)')
+        .bind(token, email, expiresAt).run();
 
-    const resetUrl = `${new URL(c.req.url).origin}/reset-password.html?token=${token}`;
-    const text = `You have been invited to Bricklayer Manager.\n\nPlease click the following link to set your password and access your account:\n${resetUrl}\n\nThis link will expire in 24 hours.`;
-    await sendEmail(c.env, email, 'Bricklayer Manager - You have been invited!', text);
+      const resetUrl = `${new URL(c.req.url).origin}/reset-password.html?token=${token}`;
+      const text = `You have been invited to Bricklayer Manager.\n\nPlease click the following link to set your password and access your account:\n${resetUrl}\n\nThis link will expire in 24 hours.`;
+      await sendEmail(c.env, email, 'Bricklayer Manager - You have been invited!', text);
+    } else {
+      // Password provided, send welcome email with credentials
+      const loginUrl = `${new URL(c.req.url).origin}/login`;
+      const text = `You have been invited to Bricklayer Manager.\n\nYour account has been created with the following details:\n\nEmail: ${email}\nPassword: ${password}\n\nPlease login here: ${loginUrl}`;
+      await sendEmail(c.env, email, 'Bricklayer Manager - Account Created!', text);
+    }
   }
 
   return c.json({ success: true });
@@ -337,6 +389,22 @@ app.delete('/api/users/:email', authMiddleware, async (c) => {
   } catch (error) {
     return c.json({ error: 'Failed to delete user' }, 500);
   }
+});
+
+app.post('/api/users/:email/invite-link', authMiddleware, async (c) => {
+  const user = c.get('user');
+  if (user && user.role !== 'admin') return c.json({ error: 'Forbidden' }, 403);
+
+  const email = decodeURIComponent(c.req.param('email'));
+  const chars = '0123456789abcdef';
+  const token = Array.from({length: 32}, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
+  const expiresAt = Math.floor(Date.now() / 1000) + 24 * 3600; // 24 hours
+
+  await c.env.BRICKLAYER_DB.prepare('INSERT INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)')
+    .bind(token, email, expiresAt).run();
+
+  const resetUrl = `${new URL(c.req.url).origin}/reset-password.html?token=${token}`;
+  return c.json({ inviteLink: resetUrl });
 });
 
 // Endpoint for `bricklayer manage` CLI to push config
@@ -381,7 +449,7 @@ app.post('/api/sites', authMiddleware, async (c) => {
     
     return c.json({ success: true, message: 'Site registered successfully', id: siteId });
   } catch (error) {
-    return c.json({ error: 'Failed to register site' }, 500);
+    return c.json({ error: 'Failed to register site', details: error.message, stack: error.stack }, 500);
   }
 });
 
@@ -447,7 +515,19 @@ app.delete('/api/sites/:id', authMiddleware, async (c) => {
 // Endpoint for the Admin Dashboard to fetch all sites
 app.get('/api/sites', authMiddleware, async (c) => {
   try {
-    const result = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM sites').all();
+    const user = c.get('user');
+    let result;
+    if (user && user.role !== 'admin') {
+       let assignedSites = [];
+       try { assignedSites = JSON.parse(user.assigned_sites || '[]'); } catch(e) {}
+       if (assignedSites.length > 0) {
+           result = await c.env.BRICKLAYER_DB.prepare(`SELECT * FROM sites WHERE id IN (${assignedSites.map(() => '?').join(',')})`).bind(...assignedSites).all();
+       } else {
+           return c.json({ sites: [] });
+       }
+    } else {
+       result = await c.env.BRICKLAYER_DB.prepare('SELECT * FROM sites').all();
+    }
     return c.json({ sites: result.results });
   } catch (error) {
     return c.json({ error: 'Failed to fetch sites: ' + error.message, stack: error.stack }, 500);
@@ -490,9 +570,9 @@ app.get('/api/sites/:id/costings', authMiddleware, async (c) => {
 app.post('/api/sites/:id/costings', authMiddleware, async (c) => {
   try {
     const user = c.get('user');
-    if (user && user.role === 'viewer') return c.json({ error: 'Forbidden' }, 403);
+    if (user && user.role !== 'admin' && !user.can_add_transactions) return c.json({ error: 'Forbidden' }, 403);
     const siteId = decodeURIComponent(c.req.param('id'));
-    const { description, amount, is_paid, frequency, created_at } = await c.req.json();
+    const { description, amount, type, is_paid, frequency, created_at } = await c.req.json();
     
     if (!description || amount === undefined || !frequency) {
       return c.json({ error: 'Missing required fields' }, 400);
@@ -500,12 +580,12 @@ app.post('/api/sites/:id/costings', authMiddleware, async (c) => {
 
     if (created_at) {
         await c.env.BRICKLAYER_DB.prepare(
-          'INSERT INTO costings (site_id, description, amount, is_paid, frequency, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-        ).bind(siteId, description, amount, is_paid ? 1 : 0, frequency, created_at).run();
+          'INSERT INTO costings (site_id, description, amount, type, is_paid, frequency, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).bind(siteId, description, amount, type || 'expense', is_paid ? 1 : 0, frequency, created_at).run();
     } else {
         await c.env.BRICKLAYER_DB.prepare(
-          'INSERT INTO costings (site_id, description, amount, is_paid, frequency) VALUES (?, ?, ?, ?, ?)'
-        ).bind(siteId, description, amount, is_paid ? 1 : 0, frequency).run();
+          'INSERT INTO costings (site_id, description, amount, type, is_paid, frequency) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(siteId, description, amount, type || 'expense', is_paid ? 1 : 0, frequency).run();
     }
 
     return c.json({ success: true });
@@ -517,18 +597,18 @@ app.post('/api/sites/:id/costings', authMiddleware, async (c) => {
 app.put('/api/costings/:id', authMiddleware, async (c) => {
   try {
     const user = c.get('user');
-    if (user && user.role === 'viewer') return c.json({ error: 'Forbidden' }, 403);
+    if (user && user.role !== 'admin' && !user.can_add_transactions) return c.json({ error: 'Forbidden' }, 403);
     const id = c.req.param('id');
-    const { description, amount, is_paid, frequency, created_at } = await c.req.json();
+    const { description, amount, type, is_paid, frequency, created_at } = await c.req.json();
 
     if (created_at) {
         await c.env.BRICKLAYER_DB.prepare(
-          'UPDATE costings SET description = ?, amount = ?, is_paid = ?, frequency = ?, created_at = ? WHERE id = ?'
-        ).bind(description, amount, is_paid ? 1 : 0, frequency, created_at, id).run();
+          'UPDATE costings SET description = ?, amount = ?, type = ?, is_paid = ?, frequency = ?, created_at = ? WHERE id = ?'
+        ).bind(description, amount, type || 'expense', is_paid ? 1 : 0, frequency, created_at, id).run();
     } else {
         await c.env.BRICKLAYER_DB.prepare(
-          'UPDATE costings SET description = ?, amount = ?, is_paid = ?, frequency = ? WHERE id = ?'
-        ).bind(description, amount, is_paid ? 1 : 0, frequency, id).run();
+          'UPDATE costings SET description = ?, amount = ?, type = ?, is_paid = ?, frequency = ? WHERE id = ?'
+        ).bind(description, amount, type || 'expense', is_paid ? 1 : 0, frequency, id).run();
     }
 
     return c.json({ success: true });
@@ -540,7 +620,7 @@ app.put('/api/costings/:id', authMiddleware, async (c) => {
 app.delete('/api/costings/:id', authMiddleware, async (c) => {
   try {
     const user = c.get('user');
-    if (user && user.role === 'viewer') return c.json({ error: 'Forbidden' }, 403);
+    if (user && user.role !== 'admin' && !user.can_add_transactions) return c.json({ error: 'Forbidden' }, 403);
     const id = c.req.param('id');
     await c.env.BRICKLAYER_DB.prepare('DELETE FROM costings WHERE id = ?').bind(id).run();
     return c.json({ success: true });
@@ -551,12 +631,31 @@ app.delete('/api/costings/:id', authMiddleware, async (c) => {
 
 app.get('/api/finance-report', authMiddleware, async (c) => {
   try {
+    const user = c.get('user');
+    if (user && user.role !== 'admin' && !user.can_finance) return c.json({ error: 'Forbidden' }, 403);
+    
+    // Filter sites if not admin
+    let siteFilter = '';
+    let params = [];
+    if (user && user.role !== 'admin') {
+       let assignedSites = [];
+       try { assignedSites = JSON.parse(user.assigned_sites || '[]'); } catch(e) {}
+       if (assignedSites.length > 0) {
+           siteFilter = `WHERE s.id IN (${assignedSites.map(() => '?').join(',')})`;
+           params = assignedSites;
+       } else {
+           // No assigned sites, return empty
+           return c.json({ report: [], currency: await getSetting(c.env, 'currency', 'USD') });
+       }
+    }
+    
     const result = await c.env.BRICKLAYER_DB.prepare(`
-      SELECT c.id, c.description, c.amount, c.is_paid, c.frequency, c.created_at, s.name as site_name, s.id as site_id
+      SELECT c.id, c.description, c.amount, c.type, c.is_paid, c.frequency, c.created_at, s.name as site_name, s.id as site_id
       FROM costings c
       JOIN sites s ON c.site_id = s.id
+      ${siteFilter}
       ORDER BY s.name ASC, c.created_at DESC
-    `).all();
+    `).bind(...params).all();
     
     const currency = await getSetting(c.env, 'currency', 'USD');
     return c.json({ report: result.results, currency });

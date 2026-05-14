@@ -277,15 +277,25 @@
 
                     <!-- Add/Edit Costing Form -->
                     <form @submit.prevent="saveCosting" class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <h4 class="text-sm font-medium text-gray-900 mb-3" x-text="costingForm.id ? 'Edit Costing' : 'Add New Costing'"></h4>
+                        <h4 class="text-sm font-medium text-gray-900 mb-3" x-text="costingForm.id ? 'Edit Transaction' : 'Add New Transaction'"></h4>
                         <div class="grid grid-cols-1 gap-y-4 sm:grid-cols-6 sm:gap-x-4">
-                            <div class="sm:col-span-3">
+                            <div class="sm:col-span-6">
                                 <label class="block text-xs font-medium text-gray-700">Description</label>
                                 <input type="text" x-model="costingForm.description" required placeholder="e.g. Development" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                             </div>
-                            <div class="sm:col-span-1">
+                            <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700">Amount</label>
-                                <input type="number" step="0.01" x-model="costingForm.amount" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <div class="mt-1 flex rounded-md shadow-sm">
+                                    <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm" x-text="currency === 'GBP' ? '£' : currency === 'EUR' ? '€' : '$'"></span>
+                                    <input type="text" x-model="displayAmount" @input="parseAmount" required class="flex-1 block w-full min-w-0 rounded-none rounded-r-md border border-gray-300 py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                </div>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700">Type</label>
+                                <select x-model="costingForm.type" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="expense">Expense</option>
+                                    <option value="income">Income</option>
+                                </select>
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700">Frequency</label>
@@ -373,8 +383,39 @@
             currentSite: null,
             siteCostings: [],
             loadingCostings: false,
-            costingForm: { description: '', amount: '', is_paid: false, frequency: 'one time' },
+            costingForm: { description: '', amount: '', type: 'expense', is_paid: false, frequency: 'one time' },
             currency: 'USD',
+            displayAmount: '',
+
+            parseAmount(e) {
+                let rawVal = e.target.value.replace(/,/g, '');
+                let val = rawVal.replace(/[^0-9.]/g, '');
+                const parts = val.split('.');
+                if (parts.length > 2) {
+                    val = parts[0] + '.' + parts.slice(1).join('');
+                }
+                
+                this.costingForm.amount = parseFloat(val) || 0;
+                
+                if (val) {
+                    const numberParts = val.split('.');
+                    numberParts[0] = numberParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    this.displayAmount = numberParts.join('.');
+                } else {
+                    this.displayAmount = '';
+                }
+            },
+            
+            formatDisplayAmount() {
+                if (this.costingForm.amount) {
+                    const val = this.costingForm.amount.toString();
+                    const numberParts = val.split('.');
+                    numberParts[0] = numberParts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    this.displayAmount = numberParts.join('.');
+                } else {
+                    this.displayAmount = '';
+                }
+            },
 
             async init() {
                 await this.fetchSettings();
@@ -496,6 +537,7 @@
 
             editCosting(costing) {
                 this.costingForm = { ...costing };
+                this.formatDisplayAmount();
                 if (this.costingForm.created_at) {
                     this.costingForm.created_at = this.costingForm.created_at.substring(0, 10);
                 }
@@ -503,7 +545,8 @@
 
             cancelEditCosting() {
                 const today = new Date().toISOString().substring(0, 10);
-                this.costingForm = { description: '', amount: '', is_paid: false, frequency: 'one time', created_at: today };
+                this.costingForm = { description: '', amount: '', type: 'expense', is_paid: false, frequency: 'one time', created_at: today };
+                this.displayAmount = '';
             },
 
             async saveCosting() {
@@ -552,6 +595,7 @@
                         body: JSON.stringify({
                             description: costing.description,
                             amount: costing.amount,
+                            type: costing.type,
                             frequency: costing.frequency,
                             is_paid: !costing.is_paid
                         })

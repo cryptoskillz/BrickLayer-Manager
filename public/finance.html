@@ -134,20 +134,20 @@
         <div x-show="!loading && !error" class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-6" x-cloak>
             <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">Total Outstanding</dt>
-                    <dd class="mt-1 text-2xl font-semibold text-red-600" x-text="formatCurrency(globalTotalUnpaid)"></dd>
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total Income</dt>
+                    <dd class="mt-1 text-2xl font-semibold text-green-600" x-text="formatCurrency(globalTotalIncome)"></dd>
                 </div>
             </div>
             <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">Total Paid</dt>
-                    <dd class="mt-1 text-2xl font-semibold text-green-600" x-text="formatCurrency(globalTotalPaid)"></dd>
+                    <dt class="text-sm font-medium text-gray-500 truncate">Total Expenses</dt>
+                    <dd class="mt-1 text-2xl font-semibold text-red-600" x-text="formatCurrency(globalTotalExpense)"></dd>
                 </div>
             </div>
             <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200 bg-blue-50">
                 <div class="px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-blue-800 truncate">Monthly Run Rate</dt>
-                    <dd class="mt-1 text-2xl font-semibold text-blue-900" x-text="formatCurrency(monthlyRunRate)"></dd>
+                    <dt class="text-sm font-medium text-blue-800 truncate">Net Balance</dt>
+                    <dd class="mt-1 text-2xl font-semibold" :class="globalNetBalance >= 0 ? 'text-green-600' : 'text-red-600'" x-text="formatCurrency(globalNetBalance)"></dd>
                 </div>
             </div>
         </div>
@@ -175,6 +175,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property / Site</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
@@ -186,6 +187,12 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="item.site_name"></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="formatDate(item.created_at)"></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="item.description"></td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize"
+                                          :class="(item.type || 'expense') === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                          x-text="item.type || 'expense'">
+                                    </span>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <span class="capitalize" x-text="item.projected_frequency || item.frequency"></span>
                                 </td>
@@ -201,21 +208,21 @@
                             </tr>
                         </template>
                         <tr x-show="filteredReport.length === 0">
-                            <td colspan="6" class="px-6 py-12 text-center text-gray-500 text-sm">No costings recorded for the selected filters.</td>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500 text-sm">No costings recorded for the selected filters.</td>
                         </tr>
                     </tbody>
                     <tfoot class="bg-gray-50" x-show="filteredReport.length > 0">
                         <tr>
-                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Filtered Total Outstanding:</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-right" x-text="formatCurrency(filteredTotalUnpaid)"></td>
+                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Filtered Total Income:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600 text-right" x-text="formatCurrency(filteredTotalIncome)"></td>
                         </tr>
                         <tr>
-                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Filtered Total Paid:</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600 text-right" x-text="formatCurrency(filteredTotalPaid)"></td>
+                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right">Filtered Total Expenses:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600 text-right" x-text="formatCurrency(filteredTotalExpense)"></td>
                         </tr>
                         <tr class="border-t-2 border-gray-200">
-                            <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right uppercase">Filtered Grand Total:</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right" x-text="formatCurrency(filteredTotalPaid + filteredTotalUnpaid)"></td>
+                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 text-right uppercase">Filtered Net Balance:</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-right" :class="filteredNetBalance >= 0 ? 'text-green-600' : 'text-red-600'" x-text="formatCurrency(filteredNetBalance)"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -415,26 +422,28 @@
                 });
             },
 
-            get monthlyRunRate() {
-                return this.report
-                    .filter(i => (i.frequency || '').toLowerCase() === 'monthly')
-                    .reduce((sum, item) => sum + item.amount, 0);
+            get globalTotalIncome() {
+                return this.report.filter(i => (i.type || 'expense') === 'income').reduce((sum, item) => sum + item.amount, 0);
             },
 
-            get globalTotalPaid() {
-                return this.report.filter(i => i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            get globalTotalExpense() {
+                return this.report.filter(i => (i.type || 'expense') === 'expense').reduce((sum, item) => sum + item.amount, 0);
             },
 
-            get globalTotalUnpaid() {
-                return this.report.filter(i => !i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            get globalNetBalance() {
+                return this.globalTotalIncome - this.globalTotalExpense;
             },
 
-            get filteredTotalPaid() {
-                return this.filteredReport.filter(i => i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            get filteredTotalIncome() {
+                return this.filteredReport.filter(i => (i.type || 'expense') === 'income').reduce((sum, item) => sum + item.amount, 0);
             },
 
-            get filteredTotalUnpaid() {
-                return this.filteredReport.filter(i => !i.is_paid).reduce((sum, item) => sum + item.amount, 0);
+            get filteredTotalExpense() {
+                return this.filteredReport.filter(i => (i.type || 'expense') === 'expense').reduce((sum, item) => sum + item.amount, 0);
+            },
+
+            get filteredNetBalance() {
+                return this.filteredTotalIncome - this.filteredTotalExpense;
             },
 
             formatCurrency(amount) {
@@ -450,11 +459,12 @@
             exportCSV() {
                 if (this.filteredReport.length === 0) return;
                 
-                const headers = ['Property / Site', 'Date', 'Description', 'Frequency', 'Status', 'Amount'];
+                const headers = ['Property / Site', 'Date', 'Description', 'Type', 'Frequency', 'Status', 'Amount'];
                 const rows = this.filteredReport.map(item => [
                     `"${item.site_name || ''}"`,
                     `"${this.formatDate(item.created_at)}"`,
                     `"${item.description || ''}"`,
+                    `"${item.type || 'expense'}"`,
                     `"${item.projected_frequency || item.frequency || ''}"`,
                     `"${item.is_paid ? 'Paid' : 'Unpaid'}"`,
                     `"${item.amount}"`
