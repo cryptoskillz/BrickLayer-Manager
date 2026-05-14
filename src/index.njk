@@ -173,6 +173,27 @@ layout: base
                                 </dd>
                             </div>
 
+                            <!-- Associated URLs -->
+                            <div class="pt-2 border-t border-gray-100">
+                                <dt class="text-xs font-medium text-gray-500 uppercase tracking-wider flex justify-between items-center mt-3">
+                                    Associated URLs
+                                    <button @click="openAssocModal(site)" class="text-xs text-blue-600 hover:text-blue-500">Manage URLs</button>
+                                </dt>
+                                <dd class="mt-2 flex flex-col space-y-2">
+                                    <template x-for="(assoc, index) in parseAssocUrls(site.associated_urls)" :key="index">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-medium text-gray-700" x-text="assoc.type"></span>
+                                            <a :href="assoc.url" target="_blank" class="text-sm text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center break-all">
+                                                <span x-text="assoc.url"></span>
+                                            </a>
+                                        </div>
+                                    </template>
+                                    <template x-if="parseAssocUrls(site.associated_urls).length === 0">
+                                        <span class="text-sm text-gray-400 italic">No associated URLs</span>
+                                    </template>
+                                </dd>
+                            </div>
+
                             <!-- Repository -->
                             <template x-if="site.githubUrl">
                                 <div class="pt-2 border-t border-gray-100">
@@ -241,6 +262,61 @@ layout: base
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Associated URLs Modal -->
+    <div x-show="isAssocModalOpen" class="fixed z-20 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true" x-cloak>
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="isAssocModalOpen" @click="closeAssocModal()" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div x-show="isAssocModalOpen" class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">Manage Associated URLs</h3>
+                    
+                    <!-- Existing URLs -->
+                    <div class="mb-4 space-y-3">
+                        <template x-for="(assoc, index) in assocForm.urls" :key="index">
+                            <div class="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                                <div class="flex flex-col">
+                                    <span class="text-xs font-bold text-gray-700" x-text="assoc.type"></span>
+                                    <a :href="assoc.url" target="_blank" class="text-sm text-blue-600 hover:underline" x-text="assoc.url"></a>
+                                </div>
+                                <button @click="removeAssocUrl(index)" class="text-red-500 hover:text-red-700 p-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </template>
+                        <div x-show="assocForm.urls.length === 0" class="text-sm text-gray-500 italic">No associated URLs added yet.</div>
+                    </div>
+
+                    <!-- Add New -->
+                    <form @submit.prevent="addAssocUrl" class="border-t border-gray-200 pt-4 mt-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Add New URL</h4>
+                        <div class="grid grid-cols-1 gap-y-3 sm:grid-cols-2 sm:gap-x-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700">Type (e.g. Strapi CMS)</label>
+                                <input type="text" x-model="assocForm.newType" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700">URL</label>
+                                <input type="url" x-model="assocForm.newUrl" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            </div>
+                        </div>
+                        <div class="mt-3 text-right">
+                            <button type="submit" class="inline-flex justify-center items-center px-3 py-1.5 border border-transparent shadow-sm text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700">Add URL</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200">
+                    <button type="button" @click="saveAssocUrls" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Save Changes
+                    </button>
+                    <button type="button" @click="closeAssocModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -373,6 +449,9 @@ layout: base
             currency: 'USD',
             displayAmount: '',
 
+            isAssocModalOpen: false,
+            assocForm: { id: '', urls: [], newType: '', newUrl: '' },
+
             parseAmount(e) {
                 let rawVal = e.target.value.replace(/,/g, '');
                 let val = rawVal.replace(/[^0-9.]/g, '');
@@ -489,6 +568,61 @@ layout: base
                     }
                 } catch (e) {
                     alert('Network error updating site');
+                }
+            },
+
+            // --- Associated URLs Logic ---
+            parseAssocUrls(jsonStr) {
+                try {
+                    return JSON.parse(jsonStr || '[]');
+                } catch(e) {
+                    return [];
+                }
+            },
+
+            openAssocModal(site) {
+                this.assocForm.id = site.id;
+                this.assocForm.urls = this.parseAssocUrls(site.associated_urls);
+                this.assocForm.newType = '';
+                this.assocForm.newUrl = '';
+                this.isAssocModalOpen = true;
+            },
+
+            closeAssocModal() {
+                this.isAssocModalOpen = false;
+            },
+
+            addAssocUrl() {
+                if(this.assocForm.newType && this.assocForm.newUrl) {
+                    this.assocForm.urls.push({ type: this.assocForm.newType, url: this.assocForm.newUrl });
+                    this.assocForm.newType = '';
+                    this.assocForm.newUrl = '';
+                }
+            },
+
+            removeAssocUrl(index) {
+                this.assocForm.urls.splice(index, 1);
+            },
+
+            async saveAssocUrls() {
+                const token = localStorage.getItem('bricklayer_token');
+                try {
+                    const res = await fetch(`/api/sites/${encodeURIComponent(this.assocForm.id)}`, {
+                        method: 'PUT',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ associated_urls: JSON.stringify(this.assocForm.urls) })
+                    });
+                    if (res.ok) {
+                        this.fetchSites();
+                        this.closeAssocModal();
+                    } else {
+                        alert('Failed to update associated URLs');
+                    }
+                } catch (e) {
+                    alert('Network error updating associated URLs');
                 }
             },
 

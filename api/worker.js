@@ -428,10 +428,11 @@ app.post('/api/sites', authMiddleware, async (c) => {
     const vanityPreviewUrl = existing ? existing.vanityPreviewUrl : '';
     const vanityCmsUrl = existing ? existing.vanityCmsUrl : '';
     const vanityPreviewCmsUrl = existing ? existing.vanityPreviewCmsUrl : '';
+    const associated_urls = existing ? existing.associated_urls : '[]';
 
     await c.env.BRICKLAYER_DB.prepare(`
-      INSERT INTO sites (id, name, url, description, environment, accountId, githubUrl, cmsUrl, previewCmsUrl, previewUrl, vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, lastUpdated) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO sites (id, name, url, description, environment, accountId, githubUrl, cmsUrl, previewCmsUrl, previewUrl, vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, associated_urls, lastUpdated) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(id) DO UPDATE SET 
         name = excluded.name, 
         url = excluded.url, 
@@ -442,9 +443,10 @@ app.post('/api/sites', authMiddleware, async (c) => {
         cmsUrl = excluded.cmsUrl,
         previewCmsUrl = excluded.previewCmsUrl,
         previewUrl = excluded.previewUrl,
+        associated_urls = excluded.associated_urls,
         lastUpdated = CURRENT_TIMESTAMP
     `).bind(
-      siteId, name, url, description, environment, accountId, githubUrl, cmsUrl, previewCmsUrl, previewUrl, vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl
+      siteId, name, url, description, environment, accountId, githubUrl, cmsUrl, previewCmsUrl, previewUrl, vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, associated_urls
     ).run();
     
     return c.json({ success: true, message: 'Site registered successfully', id: siteId });
@@ -472,6 +474,7 @@ app.put('/api/sites/:id', authMiddleware, async (c) => {
     const vanityPreviewUrl = updates.vanityPreviewUrl !== undefined ? updates.vanityPreviewUrl : existing.vanityPreviewUrl;
     const vanityCmsUrl = updates.vanityCmsUrl !== undefined ? updates.vanityCmsUrl : existing.vanityCmsUrl;
     const vanityPreviewCmsUrl = updates.vanityPreviewCmsUrl !== undefined ? updates.vanityPreviewCmsUrl : existing.vanityPreviewCmsUrl;
+    const associated_urls = updates.associated_urls !== undefined ? updates.associated_urls : (existing.associated_urls || '[]');
     
     await c.env.BRICKLAYER_DB.prepare(`
       UPDATE sites SET 
@@ -483,11 +486,12 @@ app.put('/api/sites/:id', authMiddleware, async (c) => {
         vanityPreviewUrl = ?,
         vanityCmsUrl = ?,
         vanityPreviewCmsUrl = ?,
+        associated_urls = ?,
         lastUpdated = CURRENT_TIMESTAMP
       WHERE id = ?
     `).bind(
       url, previewUrl, cmsUrl, previewCmsUrl, 
-      vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, 
+      vanityUrl, vanityPreviewUrl, vanityCmsUrl, vanityPreviewCmsUrl, associated_urls,
       id
     ).run();
     
